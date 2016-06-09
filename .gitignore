@@ -5,3 +5,10 @@ Server/node_modules
 
 # our server start script with all of our super secret enviornment variables
 Server/start.sh
+
+# Files for communication terms between arduino and server
+Server/api.js
+Firmware/api.h
+
+notes
+

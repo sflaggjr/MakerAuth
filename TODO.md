@@ -30,14 +30,21 @@ Access Server code:
 - [ ] handle admin access againts hashed password
 - [ ] push notify failed access atempts (optimization)
 - [ ] Store machineIDs hashes in a db collection (or just ids in plain text)
-- [ ] handle request against machineID db entries
+- [x] handle request against machineID db entries
+- [x] Account for membership expirations
 - [ ] TLS? (optimization)
+- [ ] handle find member request
 
 Interface / Client side: ( cordova has an nfc plug-in that would make card registration much easier in future)
 
+- [ ] admin: find member
+- [ ] admin: show time to expiration for individual members
 - [x] admin: add access
 - [ ] admin: revoke access
+- [ ] admin: membership renewal
 - [ ] admin: show activity (optimization)
+- [ ] member display: show membership expiration
+- [ ] mmeber display: Renewal reminder
 - [ ] put up an actual barier to admin page
 - [ ] cordova admin app (optimization)
 - [ ] pass push notificationID to server (optimization)
