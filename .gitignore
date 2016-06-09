@@ -12,3 +12,6 @@ Firmware/api.h
 
 notes
 
+# compilations of sparkcore firmware
+core_firmware_*
+Firmware/sparkcore/core_firmware_*
