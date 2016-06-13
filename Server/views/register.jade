@@ -7,21 +7,32 @@ extends ./header.jade
 
 block content
     .app.container
-        #register.jumbotron
-            h1#indicator Scan New ...
-            p Unregistered Member or Point of Access
-            #registration
+        h1#msg Have someone scan a card!
+        #registerMember.jumbotron.view
+            h1 Member signup
+            p#memMsg Sign up member:
+            .formField
                 .form-group
-                    label#nameField(for="fullname") Fullname
+                    label(for="fullname") Fullname
                     input#name.form-control(type="text" name="Fullname" required="true")
                 #monthsField.form-group
                     label(for="months") Renewal amount in months
                     input#months.form-control(type="number" name="monthsField" min="1" max="12")
                 .form-group
-                    label#accountField(for="acountType") Member type
+                    label(for="acountType") Member type
                     input#account.form-control(type="text" name="accountType")
-                button#save.btn.btn-success.btn-lg Register
-            span#msg
+                button.submit.btn.btn-success.btn-lg Register
+        #registerBot.jumbotron.view
+            h1 Bot Registration
+            p#botMsg Sign up bot:
+            .formField
+                .form-group
+                    label(for="botName") Bot's name
+                    input#botName.form-control(type="text" name="botName" required="true")
+                .form-group
+                    label(for="botType") Type of bot
+                    input#botType.form-control(type="text" name="botType" required="true")
+                button.submit.btn.btn-success.btn-lg Register
     script( type="text/javascript" 
             src='https://code.jquery.com/jquery-2.2.4.min.js' 
             integrity='sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44='

@@ -55,12 +55,12 @@ var mongo = { // depends on: mongoose
                             successCallback(member);                                   // LET THEM IN!!!!
                         }
                     } else {                                                           // if no access or no access to specific machine
-                        sockets.io.emit('register', {cardID: card, machine: machine}); // send socket emit to potential admin
+                        sockets.io.emit('regMember', {cardID: card, machine: machine});// send socket emit to potential admin
                         failCallback('not a member');                                  // given them proper credentials to put in db
                     }
                 });
             } else {
-                sockets.io.emit('newbot', machine);                                    // signal an interface prompt for registering bots
+                sockets.io.emit('regBot', machine);                                    // signal an interface prompt for registering bots
                 failCallback('not a bot');
             }
         });
