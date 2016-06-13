@@ -74,11 +74,20 @@ var search = {
                 sockets.io.emit('message', 'search issue: ' + err);
             }else if(member){
                 sockets.io.emit('found', member);
-            } else {
-                sockets.io.emit('message', 'no member with that name, maybe bad spelling?');
-            }
+            } else { sockets.io.emit('message', 'no member with that name, maybe bad spelling?');}
         });
     },
+    revokeAll: function(fullname){
+        mongo.member.findOne({fullname: fullname}, function(err, member){
+            if(err){
+                sockets.io.emit('message', 'search issue: ' + err);
+            }else if(member){
+                member.accesspoints = []; // set no acces to anything
+                member.save();
+                sockets.io.emit('message', 'access denied');
+            } else { sockets.io.emit('message', 'thats odd... you just searched for that person right?');}
+        });
+    }
 }
 
 
@@ -116,6 +125,7 @@ var register = {
     }
 }
 
+
 var sockets = {
     io: require('socket.io'),
     listen: function(server){
@@ -124,6 +134,7 @@ var sockets = {
             socket.on('newMember', register.member);
             socket.on('newBot', register.bot);
             socket.on('find', search.find);
+            socket.on('revokeAll', search.revokeAll);
             console.log(socket.id + " connected");
         });
     }

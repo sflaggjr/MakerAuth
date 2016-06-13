@@ -58,7 +58,8 @@ var search = {
             access += ', ';
         }
         $('#accesspoints').text(access);
-    }
+    },
+    revokeAll: function(){sock.et.emit('revokeAll', $('#nameResult').text() );}
 }
 
 var sock = {                                                   // Handle socket.io connection events
@@ -92,6 +93,8 @@ var app = {
         sock.init();
         $('.reject').on('click', register.reject);
         $('.submit').on('click', register.submit);
+        $('#revokeAll').on('click', search.revokeAll);
+        $('#renew').on('click', function(){$('#msg').text('feature does not work yet');});
         $(document).keydown(function(event){
             if(event.which === 13){register.submit();}         // given enter button is pressed do same thing as clicking register
         });
