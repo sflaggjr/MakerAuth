@@ -14,6 +14,10 @@ Here is a small shell script that sets up said variables
 
     MONGODB_URI="mongodb://localhost.makerauth"
     export MONGODB_URI
+    
+    #password for root, make live one something better than this
+    MASTER_PASS="monkey"
+    export MASTER_PASS
 
     echo "Starting the accessBot!"
     # nodemon accessBot.js # reloads server on source change -> sudo npm install -g nodemon

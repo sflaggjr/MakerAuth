@@ -1,32 +1,66 @@
 // register.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 
-var sock = {                                                   // Handle socket.io connection events
-    et: io(),                                                  // start socket.io listener
-    cards: 1,                                                  // number unidentified cards swiped this session
-    init: function(){                                          // allow chat and go when we have a name
-        sock.et.on('register', sock.passCreds);                // recieves real time chat information
-        sock.et.on('newbot', sock.newbot);                     // handles registering new accesspoints
+var register = {
+    botID: null,
+    cardID: null,
+    type: null,
+    submit: function(){
+        if(register.type === 'member'){
+            register.member();
+        } else if (register.type === 'bot'){
+            register.bot();
+        }
     },
-    passCreds: function(data){
-        $('#monthsField').show();                              // be sure monthsField is showing
-        $('input[name="type"]').val('member');                 // indicate this is a different type of form
-        $('input[name="cardID"]').val(data.cardID);            // fill cardID to submit
-        $('input[name="machine"]').val(data.machine);          // fill machine value to submit TODO show which machine
-        // $('#indicator').text("Register Member:" + sock.cards); // indicated ready for submission
-        $('#indicator').text("Register Member:" + data.cardID);// indicated ready for submission
-        $('#nameField').text("Fullname");
-        $('#accountField').text('Member type');
-        sock.cards++;                                          // to see and new unidentified card has swiped
+    member: function(){
+        sock.et.emit('newMember', {
+            fullname: $('#name').val(),
+            cardID: register.cardID,
+            accountType: $('#account').val(),
+            machine: register.botID,
+            months: $('#months').val()
+        })
     },
-    newbot: function(machineID){
-        $('#monthsField').hide();                              // hide months feild
-        $('input[name="type"]').val('bot');                    // indicate this is a different type of form
-        $('input[name="machine"]').val(machineID);             // fill machine value to submit TODO name machine
-        $('#indicator').text("Register bot:" + machineID);     // indicated ready for submission
-        $('#nameField').text("Name: point of access");
-        $('#accountField').text("Type: point of access");
+    bot: function(){
+        sock.et.emit('newBot', {
+            fullname: $('#name').val(),
+            accountType: $('#account').val(),
+            machine: register.botID
+        })
     }
 }
 
+var sock = {                                                   // Handle socket.io connection events
+    et: io(),                                                  // start socket.io listener
+    init: function(){                                          // allow chat and go when we have a name
+        sock.et.on('register', sock.passCreds);                // recieves real time chat information
+        sock.et.on('newbot', sock.newbot);                     // handles registering new accesspoints
+        sock.et.on('message', sock.msg)
+    },
+    passCreds: function(data){
+        $('#monthsField').show();                              // be sure monthsField is showing
+        register.type = 'member';                              // indicate this is a different type of form
+        register.cardID = data.cardID;                         // fill cardID to submit
+        register.botID = data.machine;                         // fill machine value to submit TODO show which machine
+        $('#indicator').text("Register Member:" + data.cardID);// indicated ready for submission
+        $('#nameField').text("Fullname");
+        $('#accountField').text('Member type');
+    },
+    newbot: function(machineID){
+        $('#monthsField').hide();                              // hide months feild
+        register.type = 'bot';                                 // indicate this is a different type of form
+        register.botID = machineID;                            // fill machine value to submit TODO name machine
+        $('#indicator').text("Register bot:" + machineID);     // indicated ready for submission
+        $('#nameField').text("Name: point of access");
+        $('#accountField').text("Type: point of access");
+    },
+    msg: function(msg){$('#msg').text(msg);}
+}
 
-$(document).ready(sock.init);
+var app = {
+    init: function(){
+        sock.init();
+        $('#save').on('click', register.submit);
+    }
+}
+
+$(document).ready(app.init);
