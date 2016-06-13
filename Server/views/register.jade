@@ -8,13 +8,29 @@ extends ./header.jade
 block content
     .app.container
         h1#msg Have someone scan a card!
+        #findMember.jumbotron.view
+            h1 Find a member
+            p#findMsg
+            .formField
+                .form-group
+                    label(for=name) Fullname
+                    input#findName.form-control(type="text", name="name")
+                button.submit.btn.btn-success.btn-lg Find
+            #findResult
+                h1 Member information
+                span Fullname:
+                p#nameResult
+                span Last Renewal:
+                P#renewalResult
+                span Can access:
+                p#accesspoints
         #registerMember.jumbotron.view
             h1 Member signup
             p#memMsg Sign up member:
             .formField
                 .form-group
                     label(for="fullname") Fullname
-                    input#name.form-control(type="text" name="Fullname" required="true")
+                    input#name.form-control(type="text" name="fullname" required="true")
                 #monthsField.form-group
                     label(for="months") Renewal amount in months
                     input#months.form-control(type="number" name="monthsField" min="1" max="12")
@@ -22,6 +38,7 @@ block content
                     label(for="acountType") Member type
                     input#account.form-control(type="text" name="accountType")
                 button.submit.btn.btn-success.btn-lg Register
+                button.reject.btn.btn-success.btn-lg.pull-right Reject
         #registerBot.jumbotron.view
             h1 Bot Registration
             p#botMsg Sign up bot:
@@ -33,6 +50,7 @@ block content
                     label(for="botType") Type of bot
                     input#botType.form-control(type="text" name="botType" required="true")
                 button.submit.btn.btn-success.btn-lg Register
+                button.reject.btn.btn-success.btn-lg.pull-right Reject
     script( type="text/javascript" 
             src='https://code.jquery.com/jquery-2.2.4.min.js' 
             integrity='sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44='

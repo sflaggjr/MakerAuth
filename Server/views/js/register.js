@@ -10,7 +10,7 @@ var register = {
         } else if (register.type === 'bot'){
             register.bot();
         } else {
-            $('#msg').text('No reason to press enter');
+            search.find();
         }
         register.type = null;
     },
@@ -22,7 +22,7 @@ var register = {
             machine: register.botID,
             months: $('#months').val()
         });
-        $('.view').hide();  // hide all views
+        app.display('search');
     },
     bot: function(){
         sock.et.emit('newBot', {
@@ -30,7 +30,34 @@ var register = {
             accountType: $('#botType').val(),
             machine: register.botID
         });
-        $('.view').hide();  // hide all views
+        app.display('search');
+    },
+    reject: function(){ // clears regerstation attempts
+        app.display('search');
+        register.type = null;
+    }
+}
+
+var search = {
+    find: function(){
+        var query = $('#findName').val();
+        if(query){
+            sock.et.emit('find', query);                      // pass a name for sever to look up
+        } else {
+            $('#msg').text('enter a member to search');
+        }
+    },
+    found: function(info){
+        $('#msg').text('Found member');
+        $('#findResult').show();
+        $('#nameResult').text(info.fullname);
+        $('#renewalResult').text(info.lastRenewal);
+        var access = '';
+        for(var i = 0; i < info.accesspoints.length; i++){
+            access += info.accesspoints[i];
+            access += ', ';
+        }
+        $('#accesspoints').text(access);
     }
 }
 
@@ -40,6 +67,7 @@ var sock = {                                                   // Handle socket.
         sock.et.on('regMember', sock.regMem);                  // recieves real time chat information
         sock.et.on('regBot', sock.newbot);                     // handles registering new accesspoints
         sock.et.on('message', sock.msg);
+        sock.et.on('found', search.found);
     },
     regMem: function(data){
         $('#msg').text('Unknown card scanned');
@@ -56,23 +84,28 @@ var sock = {                                                   // Handle socket.
         register.botID = machineID;                            // fill machine value to submit TODO name machine
         $('#botMsg').text("Register bot:" + machineID);        // indicated ready for submission
     },
-    msg: function(msg){$('#msg').text(msg);}
+    msg: function(msg){$('#msg').text(msg);},
 }
 
 var app = {
     init: function(){
         sock.init();
+        $('.reject').on('click', register.reject);
         $('.submit').on('click', register.submit);
         $(document).keydown(function(event){
             if(event.which === 13){register.submit();}         // given enter button is pressed do same thing as clicking register
         });
+        app.display('search');
     },
     display: function(view){
         $('.view').hide();
+        $('#findResult').hide();
         if(view === "regMember"){
             $("#registerMember").show();
-        } else {
+        } else if (view === 'regBot') {
             $("#registerBot").show();
+        } else if (view === 'search'){
+            $("#findMember").show();
         }
     }
 }

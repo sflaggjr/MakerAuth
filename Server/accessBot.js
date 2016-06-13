@@ -67,6 +67,21 @@ var mongo = { // depends on: mongoose
     }
 }
 
+var search = {
+    find: function(query){
+        mongo.member.findOne({fullname: query}, function(err, member){
+            if(err){
+                sockets.io.emit('message', 'search issue: ' + err);
+            }else if(member){
+                sockets.io.emit('found', member);
+            } else {
+                sockets.io.emit('message', 'no member with that name, maybe bad spelling?');
+            }
+        });
+    },
+}
+
+
 var register = {
     member: function(maker){                                          // registration post
         if(maker.cardID && maker.machine && maker.fullname && maker.months && maker.months < 14){
@@ -108,6 +123,7 @@ var sockets = {
         sockets.io.on('connection', function(socket){
             socket.on('newMember', register.member);
             socket.on('newBot', register.bot);
+            socket.on('find', search.find);
             console.log(socket.id + " connected");
         });
     }
