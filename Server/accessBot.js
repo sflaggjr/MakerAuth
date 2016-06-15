@@ -135,6 +135,12 @@ var sockets = {
             socket.on('newBot', register.bot);
             socket.on('find', search.find);
             socket.on('revokeAll', search.revokeAll);
+            socket.on('auth', function(data){
+                mongo.auth( data.machine,                                                // pass machine information
+                            data.card,                                                   // pass card information
+                            function(){sockets.io.to(socket.id).emit('auth', 'a');},     // success case callback
+                            function(msg){sockets.io.to(socket.id).emit('auth', 'd');}); // fail case callback (custom message reasons)
+            });
             console.log(socket.id + " connected");
         });
     }
