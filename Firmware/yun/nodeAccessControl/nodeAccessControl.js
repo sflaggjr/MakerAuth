@@ -5,8 +5,8 @@
 var SERVER = "http://192.168.1.113:3000";
 // var SERVER = "http://manchestermakerspace.herokuapp.com";
 
-var SERIALPORT = "/dev/ttyATH0" // for the Yun
-//var SERIALPORT = "/dev/ttyACM0"  // Ubuntu/mint Linux
+// var SERIALPORT = "/dev/ttyATH0" // for the Yun
+var SERIALPORT = "/dev/ttyACM0"  // Ubuntu/mint Linux
 
 var socket = {
     io: require('socket.io-client')(SERVER),

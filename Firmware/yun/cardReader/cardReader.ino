@@ -4,12 +4,11 @@
 #include <SPI.h>      // local arduino library
 #include <MFRC522.h>  // https://github.com/miguelbalboa/rfid
 
-#define LED 13
+#define LED 7
 #define SS_PIN 10
-#define RST_PIN A0
+#define RST_PIN 9
 #define CARD_WAIT 3000
-#define MAX_URL_SIZE 30
-#define INTERFACE Serial1 // quickly switch between Serial and Serial1 for testing purposes
+#define INTERFACE Serial // quickly switch between Serial and Serial1 for testing purposes
 
 MFRC522 cardReader = MFRC522(SS_PIN, RST_PIN);
 
@@ -26,6 +25,7 @@ void setup(){
 
 void loop(){
     getCardId();
+    // dumpCardInfo();
 }
 
 void getCardId(){
