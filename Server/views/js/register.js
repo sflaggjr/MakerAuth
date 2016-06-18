@@ -15,12 +15,16 @@ var register = {
         register.type = null;
     },
     member: function(){
-        sock.et.emit('newMember', {
+        var startDate = new Date($('#startDate').val()).getTime();  // start time in milliseconds from epoch
+        var months = $('#months').val() * 1000 * 60 * 60 * 24 * 30; // millis in a second, minute, hour, day, month = millis per month
+        var expireTime = startDate + months;                        // get expiration time by adding months in millis to start time
+        sock.et.emit('newMember', {                                 // emit data to server
             fullname: $('#name').val(),
+            startDate: startDate,
+            expireTime: expireTime,
             cardID: register.cardID,
             accountType: $('#account').val(),
             machine: register.botID,
-            months: $('#months').val()
         });
         app.display('search');
     },

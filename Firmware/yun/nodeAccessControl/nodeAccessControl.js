@@ -2,8 +2,8 @@
 // This code lives on the linux side of an arduino yun
 // relaying card information from on board arduino to our access control sever via socket.io
 
-var SERVER = "http://192.168.1.113:3000";
-// var SERVER = "http://manchestermakerspace.herokuapp.com";
+// var SERVER = "http://192.168.1.113:3000";
+var SERVER = "http://manchmakerspace.herokuapp.com";
 
 // var SERIALPORT = "/dev/ttyATH0" // for the Yun
 var SERIALPORT = "/dev/ttyACM0"  // Ubuntu/mint Linux

@@ -33,9 +33,12 @@ block content
                 .form-group
                     label(for="fullname") Fullname
                     input#name.form-control(type="text" name="fullname" required="true")
+                .form-group
+                    label(for="startDate") Start Time
+                    input#startDate.form-control(type="date", min="2016-05-17")
                 #monthsField.form-group
                     label(for="months") Renewal amount in months
-                    input#months.form-control(type="number" name="monthsField" min="1" max="12")
+                    input#months.form-control(type="number" name="monthsField" min="1" max="13")
                 .form-group
                     label(for="acountType") Member type
                     input#account.form-control(type="text" name="accountType")

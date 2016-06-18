@@ -6,15 +6,13 @@
  *  this is stored so we can perform access control on each piece of equipment
  */
 
-var expired = {                                         // determine member expirations
-    byMonths: function(startTime, duration){
-        var currentDate = new Date().getTime();         // current millis from 1970
-        var startDate = new Date(startTime).getTime();  // registration time millis from 1970 TODO check professional way to address month figure
-        var monthsElapsed = (currentDate - startDate) / 1000 / 60 / 60 / 60 / 24 / 30; // figure months elapsed
-        // console.log('duration:'+ duration + '-months elapsed:' + monthsElapsed);       // DEBUG TODO remove
-        if(monthsElapsed > duration){
+var expired = {                                      // determine member expirations
+    byExactTime: function(endTime){
+        var currentDate = new Date().getTime();
+        var endDate = new Date(endTime).getTime();
+        if(currentDate > endDate){
             return true;
-        } else {return false;}
+        } else { return false; }
     }
 }
  
@@ -29,8 +27,8 @@ var mongo = { // depends on: mongoose
             cardID: { type: String, required: '{PATH} is required', unique: true },   // user card id
             accountType: {type: String},                                              // type of account, admin, mod, ect
             accesspoints: [String],                                                   // points of access member (door, machine, ect)
-            months: {type: Number},                                                   // amount of time renewed in months
-            lastRenewal: {type: Date, default: Date.now},                             // time of renewal
+            expirationTime: {type: Number},                                           // pre-calculated time of expiration
+            startDate: {type: Number},                                                // time of card assignment
         }));
         mongo.bot = mongo.ose.model('bot', new Schema({
             id: ObjectId,
@@ -49,7 +47,7 @@ var mongo = { // depends on: mongoose
                         failCallback('finding member:' + error);
                     } else if (member && member.accesspoints.indexOf(machine) > -1){   // TODO breakout in to seperate conditions
                                                                                        // TODO ^ to account for adding access points
-                        if(expired.byMonths(member.lastRenewal, member.months)){       // account for possible expiration
+                        if(expired.byExactTime(member.expirationTime)){                // account for possible expiration
                             failCallback('expired');                                   // TODO notify admin of expiration
                         } else {                                                       // TODO notify when expiration is close
                             successCallback(member);                                   // LET THEM IN!!!!
@@ -93,13 +91,14 @@ var search = {
 
 var register = {
     member: function(maker){                                          // registration post
-        if(maker.cardID && maker.machine && maker.fullname && maker.months && maker.months < 14){
+        if(maker.cardID && maker.machine && maker.fullname && maker.expireTime){
             var member = new mongo.member({                           // create a new member
                 fullname: maker.fullname,
                 cardID: maker.cardID,
                 acountType: maker.accountType,
                 accesspoints: [maker.machine],
-                months: maker.months
+                expirationTime: maker.expireTime,
+                startDate: maker.startDate
             });
             member.save(register.response)                           // save method of member scheme: write to mongo!
         } else { register.incorrect(); }
