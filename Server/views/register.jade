@@ -1,6 +1,6 @@
 // register.jade.pug.whatever ~ Copyright 2016 Manchester Makerspace ~ License MIT
 // Register users into our access control system
-// This html markeddown into Jade/Pug templating language dots are classes and hashes are IDs
+// This html markeddown into Jade/Pug templating language, dots are classes and hashes are IDs
 // <div> divisions are implicate on instatiating ids or classes
 // nesting is pythonic aka actually important
 extends ./header.jade
@@ -37,7 +37,7 @@ block content
                     label(for="startDate") Start Time
                     input#startDate.form-control(type="date", min="2016-05-17")
                 #monthsField.form-group
-                    label(for="months") Renewal amount in months
+                    label(for="months") Months of access
                     input#months.form-control(type="number" name="monthsField" min="1" max="13")
                 .form-group
                     label(for="acountType") Member type
