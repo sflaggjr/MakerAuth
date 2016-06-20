@@ -18,3 +18,4 @@ Firmware/sparkcore/core_firmware_*
 
 # more ignorance
 Firmware/yun/nodeAccessControl/node_modules
+Firmware/yun/nodeAccessControl/start.sh
