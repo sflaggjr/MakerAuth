@@ -2,14 +2,9 @@
 // This code lives on the linux side of an arduino yun
 // relaying card information from on board arduino to our access control sever via socket.io
 
-// var SERVER = "http://192.168.1.113:3000";
-var SERVER = "http://manchmakerspace.herokuapp.com";
-
-// var SERIALPORT = "/dev/ttyATH0" // for the Yun
-var SERIALPORT = "/dev/ttyACM0"  // Ubuntu/mint Linux
 
 var socket = {
-    io: require('socket.io-client')(SERVER),
+    io: require('socket.io-client')(process.env.SERVER),
     init: function(){
         socket.io.on('auth', function(data){
             var pkg = "<" + data + ">"; // make sure arduino has start and end chars to read
@@ -25,7 +20,7 @@ var arduino = {
     connection: null,
     init: function(){
         arduino.serialInstance = arduino.serialLib.SerialPort
-        arduino.connection = new arduino.serialInstance(SERIALPORT, {
+        arduino.connection = new arduino.serialInstance(process.env.SERIALPORT, {
             baudrate: 9600,
             parser: arduino.serialLib.parsers.readline('\n')
         });
@@ -38,7 +33,7 @@ var arduino = {
     read: function(data){
         console.log(data);
         data = data.slice(0, data.length-1); // exclude newline char
-        socket.io.emit('auth', {machine: 'doorbot', card: data});
+        socket.io.emit('auth', {machine: process.env.MACHINE_NAME, card: data});
     },
     close: function(){console.log('port closed');},
     error: function(error){console.log('error:' + error);},

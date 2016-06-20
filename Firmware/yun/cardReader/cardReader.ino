@@ -4,7 +4,10 @@
 #include <SPI.h>      // local arduino library
 #include <MFRC522.h>  // https://github.com/miguelbalboa/rfid
 
-#define LED 7
+#define OPEN_TIME 6000
+#define RELAY 3
+#define RED_LED 7
+#define GREEN_LED 6
 #define SS_PIN 10
 #define RST_PIN 9
 #define CARD_WAIT 3000
@@ -15,33 +18,38 @@ MFRC522 cardReader = MFRC522(SS_PIN, RST_PIN);
 const char hexmap[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
 void setup(){
-    INTERFACE.begin(9600);  // open communication
+    INTERFACE.begin(9600);      // open communication
     while(!INTERFACE){;}
-    SPI.begin();            // Init SPI bus to communicate with card reader
-    cardReader.PCD_Init();  // Init MFRC522 / start up card reader
-    // connectionAck();        // wait for connection with yun
-    pinMode(LED, OUTPUT);   // use LED
+    SPI.begin();                // Init SPI bus to communicate with card reader
+    cardReader.PCD_Init();      // Init MFRC522 / start up card reader
+    pinMode(RED_LED, OUTPUT);   // use LED
+    pinMode(GREEN_LED, OUTPUT); // use LED
+    pinMode(RELAY, OUTPUT);     // make relay pin an output
 }
 
 void loop(){
     getCardId();
-    // dumpCardInfo();
 }
 
 void getCardId(){
     if(cardReader.PICC_IsNewCardPresent() && cardReader.PICC_ReadCardSerial()){
-        digitalWrite(LED, HIGH);
-        getRequestUrlString();
-        char* response = recieve();
-        while(!response){response = recieve();}      // block until response
+        digitalWrite(RED_LED, HIGH);             // indicate state of thought
+        getRequestUrlString();                   // send uid to server
+        char* response = recieve();              // wait for a response from server
+        while(!response){response = recieve();}  // block until response
         if(strcmp(response, "a") == 0){          // a is for acceptance
-            blink(10, 50);
-            digitalWrite(LED, HIGH);
+            digitalWrite(RELAY, HIGH);           // open relay, so member can come in
+            digitalWrite(RED_LED, LOW);          // make sure red led is off
+            blink(GREEN_LED, 10, 50);            // blink green led to show success
+            digitalWrite(GREEN_LED, HIGH);       // hold green led on
+            delay(OPEN_TIME);                    // wait for amount of time relay needs to be open
+            digitalWrite(RELAY, LOW);            // stop sending current to relay
         } else if (strcmp(response, "d") == 0){  // d is for denial
-            blink(15, 200);
+            blink(RED_LED, 15, 200);             // indicate failure w/ red led blink
         }
-        delay(CARD_WAIT); // delay to leave door open or give unathorize person a hard time
-        digitalWrite(LED, LOW);
+        delay(CARD_WAIT);                        // delay to leave door open or give unathorize person a hard time
+        digitalWrite(GREEN_LED, LOW);            // make sure green is off
+        digitalWrite(RED_LED, LOW);              // make sure red is off
     }
 }
 
@@ -54,26 +62,14 @@ void getRequestUrlString(){ // Getting the ASCII representation of card's hex UI
     INTERFACE.println(cardID);        // success case, an id has been relayed to yun
 }
 
-
-void dumpCardInfo(){
-    if( cardReader.PICC_IsNewCardPresent() && cardReader.PICC_ReadCardSerial() ){
-        digitalWrite(LED, HIGH);
-        cardReader.PICC_DumpToSerial(&(cardReader.uid)); // do something with this new card
-        delay(CARD_WAIT);
-    } else {
-        digitalWrite(LED, LOW);
-    }
-    dumpCardInfo();
-}
-
-void blink(int amount, int durration){
+void blink(byte led, int amount, int durration){
     static boolean toggle = false;
     
-    toggle = ! toggle;                    // toggle LED state
-    digitalWrite(LED, toggle);            // write LED state
-    delay(durration);                     // block for a bit
-    amount--;                             // decrement blinks
-    if(amount){blink(amount, durration);} // base case is no more blinks left
+    toggle = ! toggle;                         // toggle LED state
+    digitalWrite(led, toggle);                 // write LED state
+    delay(durration);                          // block for a bit
+    amount--;                                  // decrement blinks
+    if(amount){blink(led, amount, durration);} // base case is no more blinks left
 }
 
 //======================== Serial Data Transfer (INTERFACE)
@@ -82,9 +78,8 @@ void blink(int amount, int durration){
 #define END_MARKER '>'
 
 char* recieve(){
-    static char buffer[BUFFER_SIZE];
-    // remember receivedChars stays in memory just as it would globally
-    // its just slightly more "complex" to point to where it is now
+    static char buffer[BUFFER_SIZE]; // remember receivedChars stays in memory just as it would globally
+                                     // its just slightly more "complex" to point to where it is now
     static boolean inProgress = false;
     static byte index = 0;
     
@@ -104,23 +99,5 @@ char* recieve(){
         } else if(readChar == START_MARKER){inProgress = true;}
     }
     return 0; // in the case the message has yet to be recieved
-}
-
-void connectionAck(){
-  boolean startReceived = false;
-  while (startReceived == false) {
-    // the fact that this is blocking makes testing difficult
-    // in other words the if the yun is already running the application
-    // this while loop will block the program until a yun restart
-    char* intialSignal = recieve();
-    // recieve a pointer to the first byte in the buffer array of signal
-    if (intialSignal) {
-      if (strcmp(intialSignal, "Python ready") == 0) {
-        startReceived = true;
-      }
-    }
-  }
-  // send acknowledgment
-  INTERFACE.println("<Arduino is ready>");
 }
 
