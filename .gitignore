@@ -17,5 +17,12 @@ core_firmware_*
 Firmware/sparkcore/core_firmware_*
 
 # more ignorance
-Firmware/yun/nodeAccessControl/node_modules
-Firmware/yun/nodeAccessControl/start.sh
+Firmware/nodeRelay/node_modules
+Firmware/nodeRelay/start.sh
+
+# ignore sparkcore libraries
+Firmware/sparkcore/*.cpp
+Firmware/sparkcore/*.h
+
+# ignore esp details
+Firmware/doornfcESP/*.h
