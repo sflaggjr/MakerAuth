@@ -1,10 +1,4 @@
 // accessBot.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
-/*
- * General URL structure:
- * /machineid/card [?supervising=]
- * machineid is the esp8266 unique serial number associated with the machine in database
- *  this is stored so we can perform access control on each piece of equipment
- */
 
 var expired = {                                      // determine member expirations
     byExactTime: function(endTime){

@@ -55,7 +55,7 @@ var search = {
         $('#msg').text('Found member');
         $('#findResult').show();
         $('#nameResult').text(info.fullname);
-        $('#renewalResult').text(info.lastRenewal);
+        $('#expiration').text(new Date(info.expirationTime).toDateString());
         var access = '';
         for(var i = 0; i < info.accesspoints.length; i++){
             access += info.accesspoints[i];
