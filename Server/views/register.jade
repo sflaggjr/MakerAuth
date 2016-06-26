@@ -22,10 +22,14 @@ block content
                 p#nameResult
                 span Member Expiration:
                 P#expiration
+                span Expired:
+                p#expired
                 span Can access:
                 p#accesspoints
-                button#revokeAll.btn.btn-danger.btn-lg.pull-right Revoke all
                 button#renew.btn.btn-success.btn-lg.pull-left Renew
+                input#renewMonths(type="number", name="renewMonths", min="1" max="13")
+                span :Months
+                button#revokeAll.btn.btn-danger.btn-lg.pull-right Revoke all
         #registerMember.jumbotron.view
             h1 Member signup
             p#memMsg Sign up member:
@@ -34,7 +38,7 @@ block content
                     label(for="fullname") Fullname
                     input#name.form-control(type="text" name="fullname" required="true")
                 .form-group
-                    label(for="startDate") Start Time
+                    label(for="startDate") Start Time (leave blank for current date)
                     input#startDate.form-control(type="date", min="2016-05-17")
                 #monthsField.form-group
                     label(for="months") Months of access

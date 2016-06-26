@@ -16,12 +16,10 @@ var register = {
     },
     member: function(){
         var startDate = new Date($('#startDate').val()).getTime();  // start time in milliseconds from epoch
-        var months = $('#months').val() * 1000 * 60 * 60 * 24 * 30; // millis in a second, minute, hour, day, month = millis per month
-        var expireTime = startDate + months;                        // get expiration time by adding months in millis to start time
         sock.et.emit('newMember', {                                 // emit data to server
             fullname: $('#name').val(),
             startDate: startDate,
-            expireTime: expireTime,
+            expireTime: expire.sAt($('#months').val(), startDate),
             cardID: register.cardID,
             accountType: $('#account').val(),
             machine: register.botID,
@@ -42,7 +40,25 @@ var register = {
     }
 }
 
+var expire = {                                      // determine member expirations
+    dByExactTime: function(endTime){                // determine if a member has expired
+        var currentDate = new Date().getTime();
+        var endDate = new Date(endTime).getTime();
+        if(currentDate > endDate){
+            return true;
+        } else { return false; }
+    },
+    sAt: function(months, startDate){               // determine when a member will expire
+        if(!startDate){                             // given no official start date
+            startDate = new Date().getTime();       // take current time in milliseconds from epoch
+        }
+        months = months * 1000 * 60 * 60 * 24 * 30; // millis in a second, minute, hour, day, month = millis per x months
+        return startDate + months;                  // get expiration time by adding months in millis to start time
+    }
+}
+
 var search = {
+    member: null,
     find: function(){
         var query = $('#findName').val();
         if(query){
@@ -53,17 +69,31 @@ var search = {
     },
     found: function(info){
         $('#msg').text('Found member');
+        search.member = info;
         $('#findResult').show();
         $('#nameResult').text(info.fullname);
         $('#expiration').text(new Date(info.expirationTime).toDateString());
+        $('#expired').text(expire.dByExactTime(info.expirationTime));
         var access = '';
         for(var i = 0; i < info.accesspoints.length; i++){
+            if(i){access += ', ';}
             access += info.accesspoints[i];
-            access += ', ';
         }
         $('#accesspoints').text(access);
     },
-    revokeAll: function(){sock.et.emit('revokeAll', $('#nameResult').text() );}
+    revokeAll: function(){sock.et.emit('revokeAll', $('#nameResult').text() );},
+    renew: function(){
+        var months = $('#renewMonths').val();
+        if(months && months < 14){                                                        // more than zero, less than 14
+            var member = { fullname: $('#nameResult').text() };
+            if(expire.dByExactTime(search.member.expirationTime)){                        // given membership has expired
+                member.expirationTime = expire.sAt(months);                               // renew x months from current date
+            } else {                                                                      // given membership has yet to expire
+                member.expirationTime = expire.sAt(months, search.member.expirationTime); // renew x month from expiration
+            }
+            sock.et.emit('renew', member);                                                // emit renewal to server to update db
+        } else {$('#msg').text("enter a valid amount of months");}                        // test admin to do it right
+    }
 }
 
 var sock = {                                                   // Handle socket.io connection events
@@ -98,7 +128,7 @@ var app = {
         $('.reject').on('click', register.reject);
         $('.submit').on('click', register.submit);
         $('#revokeAll').on('click', search.revokeAll);
-        $('#renew').on('click', function(){$('#msg').text('feature does not work yet');});
+        $('#renew').on('click', search.renew);
         $(document).keydown(function(event){
             if(event.which === 13){register.submit();}         // given enter button is pressed do same thing as clicking register
         });
