@@ -1,10 +1,4 @@
 // accessBot.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
-/*
- * General URL structure:
- * /machineid/card [?supervising=]
- * machineid is the esp8266 unique serial number associated with the machine in database
- *  this is stored so we can perform access control on each piece of equipment
- */
 
 var expired = {                                      // determine member expirations
     byExactTime: function(endTime){
@@ -71,6 +65,7 @@ var search = {
             if(err){
                 sockets.io.emit('message', 'search issue: ' + err);
             }else if(member){
+                member.expired = expired.byExactTime(member.expirationTime);
                 sockets.io.emit('found', member);
             } else { sockets.io.emit('message', 'no member with that name, maybe bad spelling?');}
         });
@@ -81,10 +76,26 @@ var search = {
                 sockets.io.emit('message', 'search issue: ' + err);
             }else if(member){
                 member.accesspoints = []; // set no acces to anything
-                member.save();
-                sockets.io.emit('message', 'access denied');
-            } else { sockets.io.emit('message', 'thats odd... you just searched for that person right?');}
+                member.save(search.updateCallback('member denied access'));
+            } else { sockets.io.emit('message', 'Inconcievable!');}       // you keep using that word...
         });
+    },
+    renew: function(update){
+        console.log(update);
+        mongo.member.findOne({fullname: update.fullname}, function(err, member){
+            if(err){                                                      // case of a save failure
+                sockets.io.emit('message', 'renew issue: ' + err);        // report failure to admin
+            } else if (member){                                           // case things are going right
+                member.expirationTime = update.expirationTime;            // set new expiration time
+                member.save(search.updateCallback('renewed membership')); // save and on save note success to admin
+            } else { sockets.io.emit('message', 'Inconcievable!');}       // I don't think that word means what you think it means
+        });
+    },
+    updateCallback: function(msg){ // returns a custom callback for save events
+        return function(err){
+            if(err){ sockets.io.emit('message', 'update issue:' + err); }
+            else { sockets.io.emit('message', msg); }
+        }
     }
 }
 
@@ -130,6 +141,7 @@ var sockets = {
     listen: function(server){
         sockets.io = sockets.io(server);
         sockets.io.on('connection', function(socket){
+            console.log(socket.id + " connected");
             socket.on('newMember', register.member);
             socket.on('newBot', register.bot);
             socket.on('find', search.find);
@@ -140,7 +152,7 @@ var sockets = {
                             function(){sockets.io.to(socket.id).emit('auth', 'a');},     // success case callback
                             function(msg){sockets.io.to(socket.id).emit('auth', 'd');}); // fail case callback (custom message reasons)
             });
-            console.log(socket.id + " connected");
+            socket.on('renew', search.renew);
         });
     }
 }
