@@ -16,20 +16,6 @@ block content
                     label(for=name) Fullname
                     input#findName.form-control(type="text", name="name")
                 button.submit.btn.btn-success.btn-lg Find
-            #findResult
-                h1 Member information
-                span Fullname:
-                p#nameResult
-                span Member Expiration:
-                P#expiration
-                span Expired:
-                p#expired
-                span Can access:
-                p#accesspoints
-                button#renew.btn.btn-success.btn-lg.pull-left Renew
-                input#renewMonths(type="number", name="renewMonths", min="1" max="13")
-                span :Months
-                button#revokeAll.btn.btn-danger.btn-lg.pull-right Revoke all
         #registerMember.jumbotron.view
             h1 Member signup
             p#memMsg Sign up member:
@@ -69,6 +55,23 @@ block content
                         option Storage
                 button.submit.btn.btn-success.btn-lg Register
                 button.reject.btn.btn-success.btn-lg.pull-right Reject
+        #foundMember.jumbotron
+            h1 Member display
+            button#cardScan.btn.btn-lg.btn-success.pull-right Member Scaned
+            span Fullname:
+            p#nameResult
+            span Status:
+            p#memberStatus
+            span Member Expiration:
+            P#expiration
+            span Expired:
+            p#expired
+            span Can access:
+            p#accesspoints
+            button#renew.btn.btn-success.btn-lg.pull-left Renew
+            input#renewMonths(type="number", name="renewMonths", min="1" max="13")
+            span :Months
+            button#revokeAll.btn.btn-danger.btn-lg.pull-right Revoke all
     script( type="text/javascript" 
             src='https://code.jquery.com/jquery-2.2.4.min.js' 
             integrity='sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44='

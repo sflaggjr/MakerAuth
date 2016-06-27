@@ -5,9 +5,9 @@ var register = {
     cardID: null,
     type: null,
     submit: function(){
-        if      (register.type === 'member') { register.member(); }
-        else if (register.type === 'bot')    { register.bot(); }
-        else                                 { search.find(); }
+        if (register.type === 'member'){register.member();}
+        else if (register.type === 'bot'){register.bot();}
+        else if (register.type === 'find'){search.find();}
     },
     member: function(){
         var months = $('#months').val();
@@ -68,11 +68,19 @@ var search = {
             $('#msg').text('enter a member to search');
         }
     },
+    memberScan: function(scan){
+        $('#cardScan').show().on('click', function(){
+            search.found(scan);
+            $('#cardScan').hide().off();
+        });
+    },
     found: function(info){
+        $('#foundMember').show()
         $('#msg').text('Found member');
         search.member = info;
         $('#findResult').show();
         $('#nameResult').text(info.fullname);
+        $('#memberStatus').text(info.status);
         $('#expiration').text(new Date(info.expirationTime).toDateString());
         $('#expired').text(expire.dByExactTime(info.expirationTime));
         var access = '';
@@ -104,6 +112,7 @@ var sock = {                                                   // Handle socket.
         sock.et.on('regBot', sock.newbot);                     // handles registering new accesspoints
         sock.et.on('message', sock.msg);
         sock.et.on('found', search.found);
+        sock.et.on('memberScan', search.memberScan);           // make the TSA proud
     },
     regMem: function(data){
         $('#msg').text('Unknown card scanned');
@@ -128,6 +137,8 @@ var app = {
         $('.submit').on('click', register.submit);
         $('#revokeAll').on('click', search.revokeAll);
         $('#renew').on('click', search.renew);
+        $('#cardScan').hide();                                 // only show card scan button when a card has been scanned
+        $('#foundMember').hide();
         $(document).keydown(function(event){
             if(event.which === 13){register.submit();}         // given enter button is pressed do same thing as clicking register
         });
@@ -135,7 +146,6 @@ var app = {
     },
     display: function(view){
         $('.view').hide();
-        $('#findResult').hide();
         if(view === "regMember"){
             register.type = 'member';
             $("#registerMember").show();

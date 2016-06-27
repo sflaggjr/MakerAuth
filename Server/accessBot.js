@@ -28,7 +28,7 @@ var mongo = { // depends on: mongoose
             id: ObjectId,
             machineID: {type: String, required: '{PATH} is required', unique: true},  // unique identifier of point of access
             botName: {type: String, required: '{PATH} is required', unique: true},    // human given name for point of access
-            type: {type: String, required: '{PATH} is required'},                  // type (door, tool, kegerator, ect)
+            type: {type: String, required: '{PATH} is required'},                     // type (door, tool, kegerator, ect)
         }));
     },
     auth: function(machine, card, successCallback, failCallback){                     // database calls to authenticate
@@ -39,9 +39,11 @@ var mongo = { // depends on: mongoose
                 mongo.member.findOne({cardID: card}, function(err, member){            // one call for member authenticity
                     if(err){
                         failCallback('finding member:' + error);
-                    } else if (member && member.accesspoints.indexOf(machine) > -1){   // TODO breakout in to seperate conditions
-                                                                                       // TODO ^ to account for adding access points
-                        if(expired.byExactTime(member.expirationTime)){                // account for possible expiration
+                    } else if (member){                                                // given member found
+                        sockets.io.emit('memberScan', member);                         // member scan.. just like going to the airport
+                        if(member.status === 'Revoked'){
+                            failCallback('Revoked');
+                        } else if(expired.byExactTime(member.expirationTime)){         // account for possible expiration
                             failCallback('expired');                                   // TODO notify admin of expiration
                         } else {                                                       // TODO notify when expiration is close
                             successCallback(member);                                   // LET THEM IN!!!!
@@ -75,8 +77,8 @@ var search = {
             if(err){
                 sockets.io.emit('message', 'search issue: ' + err);
             }else if(member){
-                member.accesspoints = []; // set no acces to anything
-                member.save(search.updateCallback('member denied access'));
+                member.status = 'Revoked'; // set no acces to anything
+                member.save(search.updateCallback('member revoked'));
             } else { sockets.io.emit('message', 'Inconcievable!');}       // you keep using that word...
         });
     },
