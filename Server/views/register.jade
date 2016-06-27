@@ -44,8 +44,14 @@ block content
                     label(for="months") Months of access
                     input#months.form-control(type="number" name="monthsField" min="1" max="13")
                 .form-group
-                    label(for="acountType") Member type
-                    input#account.form-control(type="text" name="accountType")
+                    label(for="acountType") Member type / Status
+                    select#account.form-control
+                        option Individual
+                        option Partner
+                        option Group
+                        option Contractor
+                        option Board
+                        option Landlord
                 button.submit.btn.btn-success.btn-lg Register
                 button.reject.btn.btn-success.btn-lg.pull-right Reject
         #registerBot.jumbotron.view
@@ -57,7 +63,10 @@ block content
                     input#botName.form-control(type="text" name="botName" required="true")
                 .form-group
                     label(for="botType") Type of bot
-                    input#botType.form-control(type="text" name="botType" required="true")
+                    select#botType.form-control
+                        option Tool
+                        option Door
+                        option Storage
                 button.submit.btn.btn-success.btn-lg Register
                 button.reject.btn.btn-success.btn-lg.pull-right Reject
     script( type="text/javascript" 

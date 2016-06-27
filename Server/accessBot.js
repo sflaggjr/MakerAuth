@@ -19,7 +19,7 @@ var mongo = { // depends on: mongoose
             id: ObjectId,                                                             // unique id of document
             fullname: { type: String, required: '{PATH} is required', unique: true }, // full name of user
             cardID: { type: String, required: '{PATH} is required', unique: true },   // user card id
-            accountType: {type: String},                                              // type of account, admin, mod, ect
+            status: {type: String, Required: '{PATH} is required'},                   // type of account, admin, mod, ect
             accesspoints: [String],                                                   // points of access member (door, machine, ect)
             expirationTime: {type: Number},                                           // pre-calculated time of expiration
             startDate: {type: Number},                                                // time of card assignment
@@ -28,7 +28,7 @@ var mongo = { // depends on: mongoose
             id: ObjectId,
             machineID: {type: String, required: '{PATH} is required', unique: true},  // unique identifier of point of access
             botName: {type: String, required: '{PATH} is required', unique: true},    // human given name for point of access
-            botType: {type: String, required: '{PATH} is required'},                  // type (door, tool, kegerator, ect)
+            type: {type: String, required: '{PATH} is required'},                  // type (door, tool, kegerator, ect)
         }));
     },
     auth: function(machine, card, successCallback, failCallback){                     // database calls to authenticate
@@ -101,28 +101,24 @@ var search = {
 
 
 var register = {
-    member: function(maker){                                          // registration post
-        if(maker.cardID && maker.machine && maker.fullname && maker.expireTime){
-            var member = new mongo.member({                           // create a new member
-                fullname: maker.fullname,
-                cardID: maker.cardID,
-                acountType: maker.accountType,
-                accesspoints: [maker.machine],
-                expirationTime: maker.expireTime,
-                startDate: maker.startDate
-            });
-            member.save(register.response)                           // save method of member scheme: write to mongo!
-        } else { register.incorrect(); }
+    member: function(maker){                                      // registration event
+        var member = new mongo.member({                           // create a new member
+            fullname: maker.fullname,
+            cardID: maker.cardID,
+            status: maker.status,
+            accesspoints: [maker.machine],
+            expirationTime: maker.expireTime,
+            startDate: maker.startDate
+        });
+        member.save(register.response)                           // save method of member scheme: write to mongo!
     },
     bot: function(robot){
-        if(robot.machine && robot.fullname && robot.accountType){
-            var bot = new mongo.bot({
-                machineID: robot.machine,
-                botName: robot.fullname,
-                botType: robot.accountType
-            });
-            bot.save(register.response);                              // save method of member scheme: write to mongo!
-        } else { register.incorrect(); }
+        var bot = new mongo.bot({
+            machineID: robot.machine,
+            botName: robot.fullname,
+            type: robot.type
+        });
+        bot.save(register.response);                              // save method of member scheme: write to mongo!
     },
     incorrect: function(){sockets.io.emit('message', 'information needs to be entered correctly');},
     response: function(error){
