@@ -5,38 +5,39 @@ var register = {
     cardID: null,
     type: null,
     submit: function(){
-        if(register.type === 'member'){
-            register.member();
-        } else if (register.type === 'bot'){
-            register.bot();
-        } else {
-            search.find();
-        }
-        register.type = null;
+        if (register.type === 'member'){register.member();}
+        else if (register.type === 'bot'){register.bot();}
+        else if (register.type === 'find'){search.find();}
     },
     member: function(){
-        var startDate = new Date($('#startDate').val()).getTime();  // start time in milliseconds from epoch
-        sock.et.emit('newMember', {                                 // emit data to server
-            fullname: $('#name').val(),
-            startDate: startDate,
-            expireTime: expire.sAt($('#months').val(), startDate),
-            cardID: register.cardID,
-            accountType: $('#account').val(),
-            machine: register.botID,
-        });
-        app.display('search');
+        var months = $('#months').val();
+        var fullname = $('#name').val();
+        var startDate = $('#startDate').val();
+        if(fullname && months < 14){                                               // make sure we have proper info to proceed
+            if(startDate){ startDate = new Date($('#startDate').val()).getTime();} // get start time if provided
+            else { startDate = new Date().getTime(); }                             // start time is now if not provided
+            sock.et.emit('newMember', {                                            // emit data to server
+                fullname: fullname,
+                startDate: startDate,
+                expireTime: expire.sAt(months, startDate),
+                cardID: register.cardID,
+                status: $('#account').val(),
+                machine: register.botID,
+            });
+            app.display('search');
+        } else { $('#msg').text('Please enter correct information'); }
     },
     bot: function(){
-        sock.et.emit('newBot', {
-            fullname: $('#botName').val(),
-            accountType: $('#botType').val(),
-            machine: register.botID
-        });
-        app.display('search');
-    },
-    reject: function(){ // clears regerstation attempts
-        app.display('search');
-        register.type = null;
+        var botName = $('#botName').val();
+        var type = $('#botType').val();
+        if(botName && type){              // make sure we have proper information to proceed
+            sock.et.emit('newBot', {      // emit information to server
+                fullname: botName,
+                type: type,
+                machine: register.botID
+            });
+            app.display('search');
+        } else { $('#msg').text('Please enter correct information'); }
     }
 }
 
@@ -67,11 +68,19 @@ var search = {
             $('#msg').text('enter a member to search');
         }
     },
+    memberScan: function(scan){
+        $('#cardScan').show().on('click', function(){
+            search.found(scan);
+            $('#cardScan').hide().off();
+        });
+    },
     found: function(info){
+        $('#foundMember').show()
         $('#msg').text('Found member');
         search.member = info;
         $('#findResult').show();
         $('#nameResult').text(info.fullname);
+        $('#memberStatus').text(info.status);
         $('#expiration').text(new Date(info.expirationTime).toDateString());
         $('#expired').text(expire.dByExactTime(info.expirationTime));
         var access = '';
@@ -103,11 +112,11 @@ var sock = {                                                   // Handle socket.
         sock.et.on('regBot', sock.newbot);                     // handles registering new accesspoints
         sock.et.on('message', sock.msg);
         sock.et.on('found', search.found);
+        sock.et.on('memberScan', search.memberScan);           // make the TSA proud
     },
     regMem: function(data){
         $('#msg').text('Unknown card scanned');
         app.display('regMember')                               // show new member form
-        register.type = 'member';                              // indicate this is a different type of form
         register.cardID = data.cardID;                         // fill cardID to submit
         register.botID = data.machine;                         // fill machine value to submit TODO show which machine
         $('#memMsg').text("Register Member:" + data.cardID);   // indicated ready for submission
@@ -115,7 +124,6 @@ var sock = {                                                   // Handle socket.
     newbot: function(machineID){
         $('#msg').text('New bot found');
         app.display('regBot');                                 // show new bot form
-        register.type = 'bot';                                 // indicate this is a different type of form
         register.botID = machineID;                            // fill machine value to submit TODO name machine
         $('#botMsg').text("Register bot:" + machineID);        // indicated ready for submission
     },
@@ -125,10 +133,12 @@ var sock = {                                                   // Handle socket.
 var app = {
     init: function(){
         sock.init();
-        $('.reject').on('click', register.reject);
+        $('.reject').on('click', function(){app.display('search');});
         $('.submit').on('click', register.submit);
         $('#revokeAll').on('click', search.revokeAll);
         $('#renew').on('click', search.renew);
+        $('#cardScan').hide();                                 // only show card scan button when a card has been scanned
+        $('#foundMember').hide();
         $(document).keydown(function(event){
             if(event.which === 13){register.submit();}         // given enter button is pressed do same thing as clicking register
         });
@@ -136,12 +146,14 @@ var app = {
     },
     display: function(view){
         $('.view').hide();
-        $('#findResult').hide();
         if(view === "regMember"){
+            register.type = 'member';
             $("#registerMember").show();
         } else if (view === 'regBot') {
+            register.type = 'bot';
             $("#registerBot").show();
         } else if (view === 'search'){
+            register.type = 'find';
             $("#findMember").show();
         }
     }
