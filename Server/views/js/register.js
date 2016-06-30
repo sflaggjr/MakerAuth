@@ -1,5 +1,58 @@
 // register.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 
+var display = {
+    removeValues: function(){              // set all input values to blank
+        $(':text').val('');
+        $(':password').val('');
+        $('#groupSize').val('');
+        $('#months').val('');
+    },
+    entryType: function(){
+        var type = $('#accountType').val();
+        $('.regEntries').hide();
+        display.removeValues();
+        $('#regBtn').show();               // make sure user has to refresh in case of mistake
+        $('#nameEntry').show();
+        $('#startEntry').show();
+        if(type === "Individual"){         // this one is super simple, just enter info to get expiry time
+            $('#monthsEntry').show();
+        } else if(type === 'Landlord'){    // Landlord gets a non-expiring key, requested use over physical key for security purposes
+            $('#startEntry').hide();
+        } else if(type === 'Group'){       // make a token that uses the group admins expiry time
+            $('#nameEntry').show();
+            $('#enterGroup').show();
+            $('#regBtn').hide();
+            $('#startEntry').hide();
+        } else if (type === 'Admin'){      // non-expiring key, board/employees pay dues given project use of space
+            $('#monthsEntry').show();      // however if they are paying members we will happily remind them when their dues are up
+            $('#passwordEntry').show();    // this allows board members to have indivdual admin rights as oppossed to using a master key
+        } else if (type === 'Contractor'){ // makes a temp pass, TODO: add end date
+        } else if (type === 'Partner'){
+            $('#monthsEntry').show();
+        }
+    },
+    findGroup: function(){                 // is called when pressing the found button (on click)
+        var whichGroup = $('#groupEntry').val();
+        if (whichGroup){
+            sock.et.emit("findGroup", whichGroup);
+        } else {$('#msg').text('please enter a group');}
+    },
+    foundGroup: function(group){           // is called when a group is found (on socket)
+        if(group.exist){
+            $('#groupFindMsg').text('add member to: ' + $('#groupEntry').val());
+            $('#enterGroupSize').hide();
+            $('#monthsEntry').hide();
+            $('#startEntry').hide();
+        } else {
+            $('#groupFindMsg').text('Group not found: will create new group');
+            $('#enterGroupSize').show();
+            $('#monthsEntry').show();
+            $('#startEntry').show();
+        }
+        $('#regBtn').show();
+    }
+}
+
 var register = {
     botID: null,
     cardID: null,
@@ -9,23 +62,41 @@ var register = {
         else if (register.type === 'bot'){register.bot();}
         else if (register.type === 'find'){search.find();}
     },
+    withConditions: function(member, startDate, months ){ // returns validation requirements per type of member
+        if      (member.status === 'Individual') { return (startDate || (months > 0 && months < 14)) && member.fullname; }
+        else if (member.status === 'Group') {
+            if (member.groupKeystone) {
+                return (startDate || (months > 0 && months < 14)) && member.fullname && member.groupName && member.groupSize;
+            } else { return startDate && member.fullname && member.groupName;}
+        }
+        else if (member.status === 'Partner') {
+            return (startDate || (months > 0 && months < 14)) && member.fullname;
+            // TODO make sure partners have keystones just like groups
+        }
+        else if (member.status === 'Admin')      { return member.fullname && member.password; }
+        else if (member.status === 'Landlord')   { return member.fullname; }
+        else if (member.status === 'Contractor') { return startDate && member.fullname }
+    },
     member: function(){
-        var months = $('#months').val();
-        var fullname = $('#name').val();
+        var months = $('#months').val();                   // get months and or start date to determine expire time
         var startDate = $('#startDate').val();
-        if(fullname && months < 14){                                               // make sure we have proper info to proceed
-            if(startDate){ startDate = new Date($('#startDate').val()).getTime();} // get start time if provided
-            else { startDate = new Date().getTime(); }                             // start time is now if not provided
-            sock.et.emit('newMember', {                                            // emit data to server
-                fullname: fullname,
-                startDate: startDate,
-                expireTime: expire.sAt(months, startDate),
-                cardID: register.cardID,
-                status: $('#account').val(),
-                machine: register.botID,
-            });
-            app.display('search');
-        } else { $('#msg').text('Please enter correct information'); }
+        var member = {
+            fullname: $('#name').val(),                    // full name of member, must be unique
+            cardID: register.cardID,                       // unique card id of this member
+            expirationTime: expire.sAt(months, startDate), // determine expire time
+            status: $('#accountType').val(),               // type of member, if revoked this with change to "Revoked"
+            accesspoints: [register.botID],                // intial point of access, TODO facility to add points of access
+            groupName: $('#groupEntry').val(),             // name of group if applicable
+            groupKeystone: false,                          // whether group keystone or not, if applicable
+            groupSize: $('#groupSize').val(),              // group size note for potential limits
+            password: $('#password').val(),                // passwords for admin access of employees or board members
+        }
+        if(member.groupSize){ member.groupKeystone = true;}            // group size is only shown to keystone members of groups
+        if(register.withConditions(member, startDate, months)){        // get proper validation for this user type
+            sock.et.emit('newMember', member);                         // emit new member to sever
+            app.display('search');                                     // display search screen on when done
+            display.removeValues();                                    // don't let potential sensitive info linger
+        } else { $('#msg').text('Please enter correct information'); } // given not valid registration information
     },
     bot: function(){
         var botName = $('#botName').val();
@@ -49,12 +120,12 @@ var expire = {                                      // determine member expirati
             return true;
         } else { return false; }
     },
-    sAt: function(months, startDate){               // determine when a member will expire
-        if(!startDate){                             // given no official start date
-            startDate = new Date().getTime();       // take current time in milliseconds from epoch
-        }
-        months = months * 1000 * 60 * 60 * 24 * 30; // millis in a second, minute, hour, day, month = millis per x months
-        return startDate + months;                  // get expiration time by adding months in millis to start time
+    sAt: function(months, startDate){                               // determine when a member will expire
+        if(startDate){ startDate = new Date(startDate).getTime(); } // convert start date to milliseconds from unix epoch
+        else { startDate = new Date().getTime(); }                  // otherwise take current time in milliseconds from unix epoch
+        if (months){                                                // given we need to calculate expire date
+            return startDate + months * 1000 * 60 * 60 * 24 * 30;   // second*minute*hour*day*month = millis per x months + start millis
+        } else { return startDate; }                                // given no months are provide start date becomes end date
     }
 }
 
@@ -62,11 +133,8 @@ var search = {
     member: null,
     find: function(){
         var query = $('#findName').val();
-        if(query){
-            sock.et.emit('find', query);                      // pass a name for sever to look up
-        } else {
-            $('#msg').text('enter a member to search');
-        }
+        if(query){ sock.et.emit('find', query); }                   // pass a name for sever to look up given a query
+        else { $('#msg').text('enter a member to search'); }        // otherwise ask for a query
     },
     memberScan: function(scan){
         $('#cardScan').show().on('click', function(){
@@ -113,6 +181,7 @@ var sock = {                                                   // Handle socket.
         sock.et.on('message', sock.msg);
         sock.et.on('found', search.found);
         sock.et.on('memberScan', search.memberScan);           // make the TSA proud
+        sock.et.on('foundGroup', display.foundGroup);          // show "found existing group" or "new group"
     },
     regMem: function(data){
         $('#msg').text('Unknown card scanned');
@@ -137,8 +206,8 @@ var app = {
         $('.submit').on('click', register.submit);
         $('#revokeAll').on('click', search.revokeAll);
         $('#renew').on('click', search.renew);
-        $('#cardScan').hide();                                 // only show card scan button when a card has been scanned
-        $('#foundMember').hide();
+        $('#findGroup').on('click', display.findGroup);
+        $('#accountType').on('change', display.entryType);     // ask for proper information depending on type of entry
         $(document).keydown(function(event){
             if(event.which === 13){register.submit();}         // given enter button is pressed do same thing as clicking register
         });
