@@ -158,6 +158,7 @@ var search = {
         $('#findResult').show();
         $('#nameResult').text(info.fullname);
         $('#memberStatus').text(info.status);
+        $('#nameOfGroup').text(info.groupName);
         $('#expiration').text(new Date(info.expirationTime).toDateString());
         $('#expired').text(expire.dByExactTime(info.expirationTime));
         var access = '';
