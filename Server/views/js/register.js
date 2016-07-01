@@ -99,14 +99,13 @@ var register = {
         } else { $('#msg').text('Please enter correct information'); } // given not valid registration information
     },
     bot: function(){
-        var botName = $('#botName').val();
-        var type = $('#botType').val();
-        if(botName && type){              // make sure we have proper information to proceed
-            sock.et.emit('newBot', {      // emit information to server
-                fullname: botName,
-                type: type,
-                machine: register.botID
-            });
+        var bot = {                               // create a new bot
+            machineID: register.botID,
+            botName: $('#botName').val(),
+            type: $('#botType').val()
+        }
+        if(bot.botName && bot.type){              // make sure we have proper information to proceed
+            sock.et.emit('newBot', bot);          // send new bot to be made to server
             app.display('search');
         } else { $('#msg').text('Please enter correct information'); }
     }

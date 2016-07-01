@@ -129,27 +129,20 @@ var search = {
     }
 }
 
-
 var register = {
     member: function(registration){                   // registration event
         var member = new mongo.member(registration);  // create member from registration object
         member.save(register.response)                // save method of member scheme: write to mongo!
     },
     bot: function(robot){
-        var bot = new mongo.bot({
-            machineID: robot.machine,
-            botName: robot.fullname,
-            type: robot.type
-        });
-        bot.save(register.response);                  // save method of member scheme: write to mongo!
+        var bot = new mongo.bot(robot);               // create a new bot w/info recieved from client/admin
+        bot.save(register.response);                  // save method of bot scheme: write to mongo!
     },
-    incorrect: function(){sockets.io.emit('message', 'information needs to be entered correctly');},
     response: function(error){
-        if(error){ sockets.io.emit('message', 'error:' + error);}
-        else { sockets.io.emit('message', 'save success');}
+        if(error){ sockets.io.emit('message', 'error:' + error); } // given a write error
+        else { sockets.io.emit('message', 'save success'); }       // show save happened to client
     }
 }
-
 
 var sockets = {
     io: require('socket.io'),
@@ -206,7 +199,6 @@ var cookie = {                                               // Admin authentica
     meWant: function(){return cookie.session(cookie.ingredients);}, // nom nom nom!
     decode: function(content){return cookie.session.util.decode(cookie.ingredients, content);},
 }
-
 
 var serve = {                                                // singlton for server setup
     express: require('express'),                             // server framework library 
