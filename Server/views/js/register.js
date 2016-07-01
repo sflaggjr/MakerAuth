@@ -7,11 +7,20 @@ var display = {
         $('#groupSize').val('');
         $('#months').val('');
     },
+    canRegister: function(youCan){
+        if(youCan){
+            $('#regBtn').show();           // show registration button
+            register.type = "member";      // member registration callback will fire on submit
+        } else {
+            $('#regBtn').hide();           // hide registration button
+            register.type = null;          // nothing will happen on submit (click or return)
+        }
+    },
     entryType: function(){
         var type = $('#accountType').val();
         $('.regEntries').hide();
         display.removeValues();
-        $('#regBtn').show();               // make sure user has to refresh in case of mistake
+        display.canRegister(true);         // give ability to register by defualt
         $('#nameEntry').show();
         $('#startEntry').show();
         if(type === "Individual"){         // this one is super simple, just enter info to get expiry time
@@ -21,7 +30,7 @@ var display = {
         } else if(type === 'Group'){       // make a token that uses the group admins expiry time
             $('#nameEntry').show();
             $('#enterGroup').show();
-            $('#regBtn').hide();
+            display.canRegister(false);    // take ability to register away, we need info from database to continue
             $('#startEntry').hide();
         } else if (type === 'Admin'){      // non-expiring key, board/employees pay dues given project use of space
             $('#monthsEntry').show();      // however if they are paying members we will happily remind them when their dues are up
@@ -49,7 +58,7 @@ var display = {
             $('#monthsEntry').show();
             $('#startEntry').show();
         }
-        $('#regBtn').show();
+        display.canRegister(true);
     }
 }
 
@@ -61,13 +70,14 @@ var register = {
         if (register.type === 'member'){register.member();}
         else if (register.type === 'bot'){register.bot();}
         else if (register.type === 'find'){search.find();}
+        else { $('#msg').text('need more info'); }
     },
     withConditions: function(member, startDate, months ){ // returns validation requirements per type of member
         if      (member.status === 'Individual') { return (startDate || (months > 0 && months < 14)) && member.fullname; }
         else if (member.status === 'Group') {
             if (member.groupKeystone) {
                 return (startDate || (months > 0 && months < 14)) && member.fullname && member.groupName && member.groupSize;
-            } else { return startDate && member.fullname && member.groupName;}
+            } else { return member.fullname && member.groupName;}
         }
         else if (member.status === 'Partner') {
             return (startDate || (months > 0 && months < 14)) && member.fullname;
