@@ -121,14 +121,7 @@ var register = {
     }
 }
 
-var expire = {                                      // determine member expirations
-    dByExactTime: function(endTime){                // determine if a member has expired
-        var currentDate = new Date().getTime();
-        var endDate = new Date(endTime).getTime();
-        if(currentDate > endDate){
-            return true;
-        } else { return false; }
-    },
+var expire = {                                                      // determine member expirations
     sAt: function(months, startDate){                               // determine when a member will expire
         if(startDate){ startDate = new Date(startDate).getTime(); } // convert start date to milliseconds from unix epoch
         else { startDate = new Date().getTime(); }                  // otherwise take current time in milliseconds from unix epoch
@@ -160,7 +153,7 @@ var search = {
         $('#memberStatus').text(info.status);
         $('#nameOfGroup').text(info.groupName);
         $('#expiration').text(new Date(info.expirationTime).toDateString());
-        $('#expired').text(expire.dByExactTime(info.expirationTime));
+        $('#expired').text(new Date().getTime() > new Date(info.expirationTime).getTime()); // Has user expired yet?
         var access = '';
         for(var i = 0; i < info.accesspoints.length; i++){
             if(i){access += ', ';}
@@ -173,7 +166,7 @@ var search = {
         var months = $('#renewMonths').val();
         if(months && months < 14){                                                        // more than zero, less than 14
             var member = { fullname: $('#nameResult').text() };
-            if(expire.dByExactTime(search.member.expirationTime)){                        // given membership has expired
+            if(new Date().getTime() > new Date(info.expirationTime).getTime()){           // if membership has expired
                 member.expirationTime = expire.sAt(months);                               // renew x months from current date
             } else {                                                                      // given membership has yet to expire
                 member.expirationTime = expire.sAt(months, search.member.expirationTime); // renew x month from expiration

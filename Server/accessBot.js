@@ -75,21 +75,18 @@ var mongo = { // depends on: mongoose
 
 var auth = {
     checkExpiry: function(member, successCallback, failCallback){
-        if(expired.byExactTime(member.expirationTime)){  // account for possible expiration
-            failCallback('expired');                     // TODO notify admin of expiration
-        } else { successCallback(member); }              // LET THEM IN!!!!
+        if(new Date().getTime() > new Date(member.expirationTime).getTime()){ // if membership expired
+            failCallback('expired');                                          // TODO notify admin of expiration
+        } else { successCallback(member); }                                   // otherwise, LET THEM IN!!!!
     }
 }
 
 var search = {
-    find: function(query){
+    find: function(query){  // response to member searches in admin client
         mongo.member.findOne({fullname: query}, function(err, member){
-            if(err){
-                sockets.io.emit('message', 'search issue: ' + err);
-            }else if(member){
-                member.expired = expired.byExactTime(member.expirationTime);
-                sockets.io.emit('found', member);
-            } else { sockets.io.emit('message', 'no member with that name, maybe bad spelling?');}
+            if(err)         { sockets.io.emit('message', 'search issue: ' + err); }
+            else if(member) { sockets.io.emit('found', member); }
+            else            { sockets.io.emit('message', 'no member with that name, maybe bad spelling?');}
         });
     },
     revokeAll: function(fullname){
