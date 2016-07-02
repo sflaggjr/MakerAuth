@@ -1,14 +1,4 @@
 // accessBot.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
-
-var expired = {                                      // determine member expirations
-    byExactTime: function(endTime){
-        var currentDate = new Date().getTime();
-        var endDate = new Date(endTime).getTime();
-        if(currentDate > endDate){
-            return true;
-        } else { return false; }
-    }
-}
  
 var mongo = { // depends on: mongoose
     ose: require('mongoose'),
@@ -176,14 +166,9 @@ var routes = {                 // singlton for adressing express route request: 
     admin: function(req, res){                                              // post by potential admin request to sign into system
         if(req.body.fullname === 'admin' && req.body.password === process.env.MASTER_PASS){
             res.render('register', {csrfToken: req.csrfToken()});
-        } else {
-            res.send('denied');
-            // case other than master password case
-        }
+        } else { res.send('denied'); }                                      // YOU SHALL NOT PASS
     },
-    login: function(req, res){ // get request to sign into system
-        res.render('signin', {csrfToken: req.csrfToken()});
-    }
+    login: function(req, res){ res.render('signin', {csrfToken: req.csrfToken()}); } // get request to sign into system
 }
 
 var cookie = {                                               // Admin authentication / depends on client-sessions
