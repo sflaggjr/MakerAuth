@@ -23,6 +23,9 @@ Here is a small shell script that sets up said variables
     # nodemon accessBot.js # reloads server on source change -> sudo npm install -g nodemon
     node accessBot.js
     
+    OUR_FRONT_DOOR="nameofthemaindoorlandlordwouldcomein"
+    export OUR_FRONT_DOOR
+
 "nano start.sh" in Sever this folder, add above code with your own parameters, ctrl-x to save, and "chmod +x start.sh"
 
 To start the server run ./start.sh
