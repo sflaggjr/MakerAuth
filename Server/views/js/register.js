@@ -1,11 +1,12 @@
 // register.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 
 var display = {
-    removeValues: function(){              // set all input values to blank
-        $(':text').val('');
-        $(':password').val('');
+    removeValues: function(removingAll){              // set all input values to blank
+        if(removingAll){$('#groupEntry').val('');}
+        $('#password').val('');
         $('#groupSize').val('');
         $('#months').val('');
+        $('#startDate').val('');
     },
     canRegister: function(youCan){
         if(youCan){
@@ -19,16 +20,14 @@ var display = {
     entryType: function(){
         var type = $('#accountType').val();
         $('.regEntries').hide();
-        display.removeValues();
+        display.removeValues(true);       // reset all input values to zero
         display.canRegister(true);         // give ability to register by defualt
-        $('#nameEntry').show();
         $('#startEntry').show();
         if(type === "Individual"){         // this one is super simple, just enter info to get expiry time
             $('#monthsEntry').show();
         } else if(type === 'Landlord'){    // Landlord gets a non-expiring key, requested use over physical key for security purposes
             $('#startEntry').hide();
         } else if(type === 'Group'){       // make a token that uses the group admins expiry time
-            $('#nameEntry').show();
             $('#enterGroup').show();
             display.canRegister(false);    // take ability to register away, we need info from database to continue
             $('#startEntry').hide();
@@ -41,6 +40,7 @@ var display = {
         }
     },
     findGroup: function(){                 // is called when pressing the found button (on click)
+        display.removeValues(false);       // remove all values accept this query
         var whichGroup = $('#groupEntry').val();
         if (whichGroup){
             sock.et.emit("findGroup", whichGroup);
@@ -105,7 +105,7 @@ var register = {
         if(register.withConditions(member, startDate, months)){        // get proper validation for this user type
             sock.et.emit('newMember', member);                         // emit new member to sever
             app.display('search');                                     // display search screen on when done
-            display.removeValues();                                    // don't let potential sensitive info linger
+            display.removeValues(true);                                // don't let potential sensitive info linger
         } else { $('#msg').text('Please enter correct information'); } // given not valid registration information
     },
     bot: function(){
@@ -132,7 +132,6 @@ var expire = {                                                      // determine
 }
 
 var search = {
-    member: null,
     find: function(){
         var query = $('#findName').val();
         if(query){ sock.et.emit('find', query); }                   // pass a name for sever to look up given a query
@@ -145,9 +144,9 @@ var search = {
         });
     },
     found: function(info){
-        $('#foundMember').show()
+        $('#foundMember').show();
+        $('#renew').show();                                         // show renew button given it was hidden
         $('#msg').text('Found member');
-        search.member = info;
         $('#findResult').show();
         $('#nameResult').text(info.fullname);
         $('#memberStatus').text(info.status);
@@ -163,15 +162,16 @@ var search = {
     },
     revokeAll: function(){sock.et.emit('revokeAll', $('#nameResult').text() );},
     renew: function(){
-        var months = $('#renewMonths').val();
+        var months = $('#renewMonths').val();                                             // TODO: make sure this in properly sanitized
         if(months && months < 14){                                                        // more than zero, less than 14
-            var member = { fullname: $('#nameResult').text() };
-            if(new Date().getTime() > new Date(info.expirationTime).getTime()){           // if membership has expired
+            var member = { fullname: $('#nameResult').text(), expirationTime: $("#expiration").text()}; // !! pull from display
+            if(new Date().getTime() > new Date(member.expirationTime).getTime()){         // if membership has expired
                 member.expirationTime = expire.sAt(months);                               // renew x months from current date
             } else {                                                                      // given membership has yet to expire
-                member.expirationTime = expire.sAt(months, search.member.expirationTime); // renew x month from expiration
+                member.expirationTime = expire.sAt(months, member.expirationTime);        // renew x month from expiration
             }
             sock.et.emit('renew', member);                                                // emit renewal to server to update db
+            $('#renew').hide();                                                           // hide renew button to prevent double renews
         } else {$('#msg').text("enter a valid amount of months");}                        // test admin to do it right
     }
 }
