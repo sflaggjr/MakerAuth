@@ -94,7 +94,7 @@ var search = {              // depends on mongo and sockets
     renew: function(update){
         mongo.member.findOne({fullname: update.fullname}, function(err, member){
             if(err){sockets.io.emit('message', 'renew issue: ' + err);}   // case of db error, report failure to admin
-            else if (member){                                           // case things are going right
+            else if (member){                                             // case things are going right
                 member.expirationTime = update.expirationTime;            // set new expiration time
                 member.save(search.updateCallback('renewed membership')); // save and on save note success to admin
             } else { sockets.io.emit('message', 'Inconcievable!');}       // I don't think that word means what you think it means
@@ -140,16 +140,15 @@ var sockets = {                                                           // dep
             socket.on('newBot', register.bot);                            // event new bot is registered
             socket.on('find', search.find);                               // event admin client looks to find a member
             socket.on('revokeAll', search.revokeAll);                     // admin client revokes member privilages
-            socket.on('auth', auth.orize(sockets.admit, sockets.deny));   // credentials are passed from a socket access point
+            socket.on('auth', auth.orize(function(){sockets.io.to(socket.id).emit('auth', 'a');},
+                                         function(msg){sockets.io.to(socket.id).emit('auth', 'd');})); // credentials passed from socket AP
             socket.on('renew', search.renew);                             // renewal is passed from admin client
             socket.on('findGroup', search.group);                         // find to to register under a group
         });
-    },
-    admit: function(){sockets.io.to(socket.id).emit('auth', 'a');},       // grant admitence to bot
-    deny: function(msg){sockets.io.to(socket.id).emit('auth', 'd');}      // TODO: report denied access or errors
+    }
 }
 
-var routes = {                                                            // depends on auth: handles routes 
+var routes = {                                                            // depends on auth: handles routes
     auth: function(req, res){                                             // get route that acccess control machine pings
         var authFunc = auth.orize(function(){res.status(200).send('a');}, // create authorization function
                                   function(msg){res.status(403).send(msg);});
@@ -174,7 +173,7 @@ var cookie = {                                               // Admin authentica
     decode: function(content){return cookie.session.util.decode(cookie.ingredients, content);},
 }
 
-var serve = {                                                // depends on cookie, routes: handles express server setup
+var serve = {                                                // depends on cookie, routes, sockets: handles express server setup
     express: require('express'),                             // server framework library 
     parse: require('body-parser'),                           // JSON parsing library
     theSite: function (){                                    // methode call to serve site
