@@ -23,55 +23,65 @@ var mongo = { // depends on: mongoose
             botName: {type: String, required: '{PATH} is required', unique: true},    // human given name for point of access
             type: {type: String, required: '{PATH} is required'},                     // type (door, tool, kegerator, ect)
         }));
+    }
+}
+
+var auth = {                                                                  // depends on mongo and sockets: authorization events
+    orize: function(success, fail){                                           // takes functions for success and fail cases
+        return function(data){                                                // return pointer to funtion that recieves credentials
+            mongo.bot.findOne({machineID: data.machine}, auth.foundBot(data, success, fail));
+        }                                                                     // first find out which bot we are dealing with
     },
-    auth: function(machine, card, successCallback, failCallback){                     // database calls to authenticate
-        mongo.bot.findOne({machineID: machine}, function(error, realBot){             // one call for machine authenticity
-            if(error){ failCallback('finding bot:' + error); }                        // database error case
-            else if(realBot){                                                         // given a bot this bot was found
-                mongo.member.findOne({cardID: card}, function(err, member){           // one call for member authenticity
-                    if(err){ failCallback('finding member:' + error); }               // database error case
-                    else if (member){                                                 // given member found
-                        sockets.io.emit('memberScan', member);                        // member scan.. just like going to the airport
-                        if(member.status === 'Revoked'){ failCallback('Revoked'); }   // if member has dark mark.. ignore deatheaters
-                        else if(member.status === 'Landlord'){                        // landlord is visiting
-                            if(realBot.botName === process.env.OUR_FRONT_DOOR){       // make sure this is our front door
-                                successCallback();                                    // our landlord can get in the front door
-                            }                                                         // no questions asked
-                        } else if (member.groupName){                                 // if this member is part of a group membership
-                            if(member.groupKeystone){                                 // keystone has expiry time
-                                auth.checkExpiry(member, successCallback, failCallback); // check right away
-                            } else {                                                  // otherwise we need to find group Keystone member
-                                mongo.member.findOne({groupName: member.groupName, groupKeystone: true}, function(er, group){
-                                    if(er)         { failCallback('finding group admin:' + error); }
-                                    else if (group){ auth.checkExpiry(group, successCallback, failCallback);}
-                                    else           { failCallback('no group admin');}
-                                });
-                            }
-                        } else {                                                       // given no group, no error, and good in standing
-                            auth.checkExpiry(member, successCallback, failCallback);   // check if membership is okey day
-                        }
-                    } else {                                                           // if no access or no access to specific machine
-                        sockets.io.emit('regMember', {cardID: card, machine: machine});// how registration information is emitted to admin
-                        failCallback('not a member');                                  // given them proper credentials to put in db
-                    }
-                });
-            } else {
-                sockets.io.emit('regBot', machine);                                    // signal an interface prompt for registering bots
-                failCallback('not a bot');
+    foundBot: function(data, success, fail){                                  // callback for when a bot is found in db
+        return function(error, bot){                                          // return a pointer to this function to keep params in closure
+            if(error){fail('finding bot:' + error);}
+            else if(bot){ mongo.member.findOne({cardID: data.card}, auth.foundMember(data, success, fail));}
+            else {
+                sockets.io.emit('regBot', data.machine);                      // signal an interface prompt for registering bots
+                fail('not a bot');
             }
-        });
-    }
-}
-
-var auth = {
-    checkExpiry: function(member, successCallback, failCallback){
+        }
+    },
+    foundMember: function(data, success, fail){                               // callback for when a member is found in db
+        return function(error, member){
+            if(error){fail('finding member:' + error)}
+            else if (member){
+                sockets.io.emit('memberScan', member);                        // member scan.. just like going to the airport
+                if (auth.checkAccess(data.machine, member.accesspoints)){
+                    if(member.status === 'Revoked'){ failCallback('Revoked'); }        // if member has dark mark.. ignore deatheaters
+                    else if(member.status === 'Landlord'){                             // landlord is visiting
+                        if(data.machine === process.env.OUR_FRONT_DOOR){ success(); }  // our landlord can get in the front door
+                    } else if (member.groupName){                                      // if this member is part of a group membership
+                        mongo.member.findOne({groupName: member.groupName, groupKeystone: true}, auth.foundGroup(data, success, fail));
+                    } else { auth.checkExpiry(member, success, fail); }                // given no group, no error, and good in standing
+                } else {fail('not authorized');}                                       // else no machine match
+            } else {
+                sockets.io.emit('regMember', {cardID: data.card, machine: data.machine}); // emit reg info to admin
+                fail('not a member');                                                     // given them proper credentials to put in db
+            }
+        }
+    },
+    foundGroup: function(data, success, fail){                                 // callback for when a group is found in db
+        return function(error, group){
+            if(error)      { fail('finding group admin:' + error); }
+            else if (group){ auth.checkExpiry(group, success, fail);}
+            else           { fail('no group admin');}
+        }
+    },
+    checkExpiry: function(member, success, fail){
         if(new Date().getTime() > new Date(member.expirationTime).getTime()){ // if membership expired
-            failCallback('expired');                                          // TODO notify admin of expiration
-        } else { successCallback(member); }                                   // otherwise, LET THEM IN!!!!
+            fail('expired');                                                  // TODO notify admin of expiration
+        } else { success(member); }                                           // otherwise, LET THEM IN!!!!
+    },
+    checkAccess: function(machine, authorized){                               // takes current machine and array of authorized machines
+        for(var i = 0; i < authorized.length; i++){                           // against all authorized machines
+            if(authorized[i] === machine){return true;}                       // is this member authorized for this machine
+        }
+        return false;                                                         // given no matches they are not authorized
     }
 }
 
-var search = {
+var search = {              // depends on mongo and sockets
     find: function(query){  // response to member searches in admin client
         mongo.member.findOne({fullname: query}, function(err, member){
             if(err)         { sockets.io.emit('message', 'search issue: ' + err); }
@@ -90,11 +100,9 @@ var search = {
         });
     },
     renew: function(update){
-        console.log(update);
         mongo.member.findOne({fullname: update.fullname}, function(err, member){
-            if(err){                                                      // case of a save failure
-                sockets.io.emit('message', 'renew issue: ' + err);        // report failure to admin
-            } else if (member){                                           // case things are going right
+            if(err){sockets.io.emit('message', 'renew issue: ' + err);}   // case of db error, report failure to admin
+            else if (member){                                             // case things are going right
                 member.expirationTime = update.expirationTime;            // set new expiration time
                 member.save(search.updateCallback('renewed membership')); // save and on save note success to admin
             } else { sockets.io.emit('message', 'Inconcievable!');}       // I don't think that word means what you think it means
@@ -131,42 +139,33 @@ var register = {
     }
 }
 
-var sockets = {
+var sockets = {                                                           // depends on register, search, auth: handle socket events
     io: require('socket.io'),
     listen: function(server){
         sockets.io = sockets.io(server);
         sockets.io.on('connection', function(socket){
-            socket.on('newMember', register.member);
-            socket.on('newBot', register.bot);
-            socket.on('find', search.find);
-            socket.on('revokeAll', search.revokeAll);
-            socket.on('auth', function(data){
-                mongo.auth( data.machine,                                                // pass machine information
-                            data.card,                                                   // pass card information
-                            function(){sockets.io.to(socket.id).emit('auth', 'a');},     // success case callback
-                            function(msg){sockets.io.to(socket.id).emit('auth', 'd');}); // fail case callback (custom message reasons)
-            });
-            socket.on('renew', search.renew);
-            socket.on('findGroup', search.group);
+            socket.on('newMember', register.member);                      // in event of new registration
+            socket.on('newBot', register.bot);                            // event new bot is registered
+            socket.on('find', search.find);                               // event admin client looks to find a member
+            socket.on('revokeAll', search.revokeAll);                     // admin client revokes member privilages
+            socket.on('auth', auth.orize(function(){sockets.io.to(socket.id).emit('auth', 'a');},
+                                         function(msg){sockets.io.to(socket.id).emit('auth', 'd');})); // credentials passed from socket AP
+            socket.on('renew', search.renew);                             // renewal is passed from admin client
+            socket.on('findGroup', search.group);                         // find to to register under a group
         });
     }
 }
 
-var routes = {                 // singlton for adressing express route request: depends on mongo
-    wild: function(req, res){  // when random routes are called
-        console.log('got request at' + req.url);
-        res.status(404).send('this is not the bot you are looking for');
+var routes = {                                                            // depends on auth: handles routes
+    auth: function(req, res){                                             // get route that acccess control machine pings
+        var authFunc = auth.orize(function(){res.status(200).send('a');}, // create authorization function
+                                  function(msg){res.status(403).send(msg);});
+        authFunc(req.params);                                             // execute auth function against credentials
     },
-    auth: function(req, res){                                               // get route that acccess control machine pings
-        mongo.auth( req.params.machine,                                     // pass machine information
-                    req.params.card,                                        // pass card information
-                    function(){res.status(200).send('Make!');},             // success case callback
-                    function(msg){res.status(403).send(msg);});             // fail case callback (custom message reasons)
-    },
-    admin: function(req, res){                                              // post by potential admin request to sign into system
+    admin: function(req, res){                                            // post by potential admin request to sign into system
         if(req.body.fullname === 'admin' && req.body.password === process.env.MASTER_PASS){
             res.render('register', {csrfToken: req.csrfToken()});
-        } else { res.send('denied'); }                                      // YOU SHALL NOT PASS
+        } else { res.send('denied'); }                                    // YOU SHALL NOT PASS
     },
     login: function(req, res){ res.render('signin', {csrfToken: req.csrfToken()}); } // get request to sign into system
 }
@@ -182,7 +181,7 @@ var cookie = {                                               // Admin authentica
     decode: function(content){return cookie.session.util.decode(cookie.ingredients, content);},
 }
 
-var serve = {                                                // singlton for server setup
+var serve = {                                                // depends on cookie, routes, sockets: handles express server setup
     express: require('express'),                             // server framework library 
     parse: require('body-parser'),                           // JSON parsing library
     theSite: function (){                                    // methode call to serve site
@@ -199,7 +198,6 @@ var serve = {                                                // singlton for ser
         router.get('/', routes.login);                       // log in page
         router.post('/', routes.admin);                      // request registration page
         router.get('/:machine/:card', routes.auth);          // authentication route
-        router.get('/*', routes.wild);                       // catches malformed request and logs them
         app.use(router);                                     // get express to user the routes we set
         sockets.listen(http);                                // listen and handle socket connections
         http.listen(process.env.PORT);                       // listen on specified PORT enviornment variable

@@ -37,18 +37,18 @@ block content
                 .form-group.regEntries#enterGroupSize(style="display:none;")
                     label(for="groupSize") Size of group
                     input#groupSize.form-control(type="number" name="groupSize")
-                .form-group.regEntries#nameEntry
+                .form-group#nameEntry
                     label(for="name") Fullname
                     input#name.form-control(type="text" name="name")
                 .form-group.regEntries#passwordEntry(style="display:none;")
                     label(for="password") Password
                     input#password.form-control(type="password" name="password")
-                .form-group.regEntries#startEntry
-                    label(for="startDate") Start Time (leave blank for current date)
-                    input#startDate.form-control(type="date", min="2016-05-17", name="startDate")
                 .form-group.regEntries#monthsEntry
                     label(for="months") Months of access
                     input#months.form-control(type="number" name="months" min="1" max="13")
+                .form-group.regEntries#startEntry
+                    label(for="startDate") Start Time (leave blank for current date)
+                    input#startDate.form-control(type="date", min="2016-05-17", name="startDate")
                 button.submit#regBtn.btn.btn-success.btn-lg Register
                 button.reject.btn.btn-success.btn-lg.pull-right Cancel
         #registerBot.jumbotron.view
