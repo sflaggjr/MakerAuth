@@ -47,12 +47,14 @@ var auth = {                                                                  //
             if(error){fail('finding member:' + error)}
             else if (member){
                 sockets.io.emit('memberScan', member);                        // member scan.. just like going to the airport
-                if(member.status === 'Revoked'){ failCallback('Revoked'); }   // if member has dark mark.. ignore deatheaters
-                else if(member.status === 'Landlord'){                        // landlord is visiting
-                    if(data.machine === process.env.OUR_FRONT_DOOR){ success(); }  // our landlord can get in the front door
-                } else if (member.groupName){                                 // if this member is part of a group membershipr
-                    mongo.member.findOne({groupName: member.groupName, groupKeystone: true}, auth.foundGroup(data, success, fail));
-                } else {  auth.checkExpiry(member, success, fail); }          // given no group, no error, and good in standing
+                if (auth.checkAccess(data.machine, member.accesspoints)){
+                    if(member.status === 'Revoked'){ failCallback('Revoked'); }        // if member has dark mark.. ignore deatheaters
+                    else if(member.status === 'Landlord'){                             // landlord is visiting
+                        if(data.machine === process.env.OUR_FRONT_DOOR){ success(); }  // our landlord can get in the front door
+                    } else if (member.groupName){                                      // if this member is part of a group membership
+                        mongo.member.findOne({groupName: member.groupName, groupKeystone: true}, auth.foundGroup(data, success, fail));
+                    } else { auth.checkExpiry(member, success, fail); }                // given no group, no error, and good in standing
+                } else {fail('not authorized');}                                       // else no machine match
             } else {
                 sockets.io.emit('regMember', {cardID: data.card, machine: data.machine}); // emit reg info to admin
                 fail('not a member');                                                     // given them proper credentials to put in db
@@ -70,6 +72,12 @@ var auth = {                                                                  //
         if(new Date().getTime() > new Date(member.expirationTime).getTime()){ // if membership expired
             fail('expired');                                                  // TODO notify admin of expiration
         } else { success(member); }                                           // otherwise, LET THEM IN!!!!
+    },
+    checkAccess: function(machine, authorized){                               // takes current machine and array of authorized machines
+        for(var i = 0; i < authorized.length; i++){                           // against all authorized machines
+            if(authorized[i] === machine){return true;}                       // is this member authorized for this machine
+        }
+        return false;                                                         // given no matches they are not authorized
     }
 }
 
