@@ -1,5 +1,5 @@
 // accessBot.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
- 
+
 var mongo = { // depends on: mongoose
     ose: require('mongoose'),
     init: function(){
@@ -24,13 +24,13 @@ var mongo = { // depends on: mongoose
             type: {type: String, required: '{PATH} is required'},                     // type (door, tool, kegerator, ect)
         }));
     }
-}
+};
 
 var auth = {                                                                  // depends on mongo and sockets: authorization events
     orize: function(success, fail){                                           // takes functions for success and fail cases
         return function(data){                                                // return pointer to funtion that recieves credentials
             mongo.bot.findOne({machineID: data.machine}, auth.foundBot(data, success, fail));
-        }                                                                     // first find out which bot we are dealing with
+        };                                                                     // first find out which bot we are dealing with
     },
     foundBot: function(data, success, fail){                                  // callback for when a bot is found in db
         return function(error, bot){                                          // return a pointer to this function to keep params in closure
@@ -40,11 +40,11 @@ var auth = {                                                                  //
                 sockets.io.emit('regBot', data.machine);                      // signal an interface prompt for registering bots
                 fail('not a bot');
             }
-        }
+        };
     },
     foundMember: function(data, success, fail){                               // callback for when a member is found in db
         return function(error, member){
-            if(error){fail('finding member:' + error)}
+            if(error){fail('finding member:' + error);}
             else if (member){
                 sockets.io.emit('memberScan', member);                        // member scan.. just like going to the airport
                 if (auth.checkAccess(data.machine, member.accesspoints)){
@@ -59,14 +59,14 @@ var auth = {                                                                  //
                 sockets.io.emit('regMember', {cardID: data.card, machine: data.machine}); // emit reg info to admin
                 fail('not a member');                                                     // given them proper credentials to put in db
             }
-        }
+        };
     },
     foundGroup: function(data, success, fail){                                 // callback for when a group is found in db
         return function(error, group){
             if(error)      { fail('finding group admin:' + error); }
             else if (group){ auth.checkExpiry(group, success, fail);}
             else           { fail('no group admin');}
-        }
+        };
     },
     checkExpiry: function(member, success, fail){
         if(new Date().getTime() > new Date(member.expirationTime).getTime()){ // if membership expired
@@ -79,7 +79,7 @@ var auth = {                                                                  //
         }
         return false;                                                         // given no matches they are not authorized
     }
-}
+};
 
 var search = {              // depends on mongo and sockets
     find: function(query){  // response to member searches in admin client
@@ -112,7 +112,7 @@ var search = {              // depends on mongo and sockets
         return function(err){
             if(err){ sockets.io.emit('message', 'update issue:' + err); }
             else { sockets.io.emit('message', msg); }
-        }
+        };
     },
     group: function(groupName){
         mongo.member.findOne({groupName: groupName, groupKeystone: true}, function(error, member){
@@ -122,12 +122,12 @@ var search = {              // depends on mongo and sockets
             } else { sockets.io.emit('foundGroup', {exist: false}); }
         });
     }
-}
+};
 
 var register = {
     member: function(registration){                   // registration event
         var member = new mongo.member(registration);  // create member from registration object
-        member.save(register.response)                // save method of member scheme: write to mongo!
+        member.save(register.response);               // save method of member scheme: write to mongo!
     },
     bot: function(robot){
         var bot = new mongo.bot(robot);               // create a new bot w/info recieved from client/admin
@@ -137,7 +137,7 @@ var register = {
         if(error){ sockets.io.emit('message', 'error:' + error); } // given a write error
         else { sockets.io.emit('message', 'save success'); }       // show save happened to client
     }
-}
+};
 
 var sockets = {                                                           // depends on register, search, auth: handle socket events
     io: require('socket.io'),
@@ -154,7 +154,7 @@ var sockets = {                                                           // dep
             socket.on('findGroup', search.group);                         // find to to register under a group
         });
     }
-}
+};
 
 var routes = {                                                            // depends on auth: handles routes
     auth: function(req, res){                                             // get route that acccess control machine pings
@@ -168,7 +168,7 @@ var routes = {                                                            // dep
         } else { res.send('denied'); }                                    // YOU SHALL NOT PASS
     },
     login: function(req, res){ res.render('signin', {csrfToken: req.csrfToken()}); } // get request to sign into system
-}
+};
 
 var cookie = {                                               // Admin authentication / depends on client-sessions
     session: require('client-sessions'),                     // mozilla's cookie library
@@ -179,10 +179,10 @@ var cookie = {                                               // Admin authentica
     },
     meWant: function(){return cookie.session(cookie.ingredients);}, // nom nom nom!
     decode: function(content){return cookie.session.util.decode(cookie.ingredients, content);},
-}
+};
 
 var serve = {                                                // depends on cookie, routes, sockets: handles express server setup
-    express: require('express'),                             // server framework library 
+    express: require('express'),                             // server framework library
     parse: require('body-parser'),                           // JSON parsing library
     theSite: function (){                                    // methode call to serve site
         var app = serve.express();                           // create famework object
@@ -202,7 +202,7 @@ var serve = {                                                // depends on cooki
         sockets.listen(http);                                // listen and handle socket connections
         http.listen(process.env.PORT);                       // listen on specified PORT enviornment variable
     }
-}
+};
 
 mongo.init();    // conect to our mongo server
 serve.theSite(); // Initiate site!
