@@ -30,7 +30,7 @@ var auth = {                                                                  //
     orize: function(success, fail){                                           // takes functions for success and fail cases
         return function(data){                                                // return pointer to funtion that recieves credentials
             mongo.bot.findOne({machineID: data.machine}, auth.foundBot(data, success, fail));
-        };                                                                     // first find out which bot we are dealing with
+        };                                                                    // first find out which bot we are dealing with
     },
     foundBot: function(data, success, fail){                                  // callback for when a bot is found in db
         return function(error, bot){                                          // return a pointer to this function to keep params in closure
@@ -42,19 +42,18 @@ var auth = {                                                                  //
             }
         };
     },
-    foundMember: function(data, success, fail){                               // callback for when a member is found in db
+    foundMember: function(data, success, fail){                                           // callback for when a member is found in db
         return function(error, member){
             if(error){fail('finding member:' + error);}
             else if (member){
-                sockets.io.emit('memberScan', member);                        // member scan.. just like going to the airport
+                sockets.io.emit('memberScan', member);                                    // member scan.. just like going to the airport
                 if (auth.checkAccess(data.machine, member.accesspoints)){
-                    if(member.status === 'Revoked'){ failCallback('Revoked'); }        // if member has dark mark.. ignore deatheaters
-                    else if(member.status === 'Landlord'){                             // landlord is visiting
-                        if(data.machine === process.env.OUR_FRONT_DOOR){ success(); }  // our landlord can get in the front door
-                    } else if (member.groupName){                                      // if this member is part of a group membership
+                    if(member.status === 'Revoked'){
+                        fail('Revoked');
+                    } else if (member.groupName){                                         // if this member is part of a group membership
                         mongo.member.findOne({groupName: member.groupName, groupKeystone: true}, auth.foundGroup(data, success, fail));
-                    } else { auth.checkExpiry(member, success, fail); }                // given no group, no error, and good in standing
-                } else {fail('not authorized');}                                       // else no machine match
+                    } else { auth.checkExpiry(member, success, fail); }                   // given no group, no error, and good in standing
+                } else {fail('not authorized');}                                          // else no machine match
             } else {
                 sockets.io.emit('regMember', {cardID: data.card, machine: data.machine}); // emit reg info to admin
                 fail('not a member');                                                     // given them proper credentials to put in db

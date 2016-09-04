@@ -25,8 +25,6 @@ var display = {
         $('#startEntry').show();
         if(type === "Individual"){         // this one is super simple, just enter info to get expiry time
             $('#monthsEntry').show();
-        } else if(type === 'Landlord'){    // Landlord gets a non-expiring key, requested use over physical key for security purposes
-            $('#startEntry').hide();
         } else if(type === 'Group'){       // make a token that uses the group admins expiry time
             $('#enterGroup').show();
             display.canRegister(false);    // take ability to register away, we need info from database to continue
@@ -84,7 +82,6 @@ var register = {
             // TODO make sure partners have keystones just like groups
         }
         else if (member.status === 'Admin')      { return member.fullname && member.password; }
-        else if (member.status === 'Landlord')   { return member.fullname; }
         else if (member.status === 'Contractor') { return startDate && member.fullname }
     },
     member: function(){
