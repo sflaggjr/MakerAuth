@@ -1,7 +1,7 @@
 // register.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 
 var display = {
-    removeValues: function(removingAll){              // set all input values to blank
+    removeValues: function(removingAll){  // set all input values to blank
         if(removingAll){$('#groupEntry').val('');}
         $('#password').val('');
         $('#groupSize').val('');
@@ -20,7 +20,7 @@ var display = {
     entryType: function(){
         var type = $('#accountType').val();
         $('.regEntries').hide();
-        display.removeValues(true);       // reset all input values to zero
+        display.removeValues(true);        // reset all input values to zero
         display.canRegister(true);         // give ability to register by defualt
         $('#startEntry').show();
         if(type === "Individual"){         // this one is super simple, just enter info to get expiry time

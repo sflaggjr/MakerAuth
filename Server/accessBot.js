@@ -26,6 +26,20 @@ var mongo = { // depends on: mongoose
     }
 };
 
+var slack = {
+    webhook: require('@slack/client').IncomingWebhook,
+    wh: null,
+    init: function(){
+        slack.wh = new slack.webhook(process.env.SLACK_WEBHOOK_URL, {
+            username: 'doorboto',
+            channel: 'whos_at_the_space',
+            iconEmoji: ':robot_face:',
+            defaultText: 'domo arigato ka?'
+        });
+        slack.wh.send('doorboto started');
+    }
+};
+
 var auth = {                                                                  // depends on mongo and sockets: authorization events
     orize: function(success, fail){                                           // takes functions for success and fail cases
         return function(data){                                                // return pointer to funtion that recieves credentials
@@ -147,8 +161,15 @@ var sockets = {                                                           // dep
             socket.on('newBot', register.bot);                            // event new bot is registered
             socket.on('find', search.find);                               // event admin client looks to find a member
             socket.on('revokeAll', search.revokeAll);                     // admin client revokes member privilages
-            socket.on('auth', auth.orize(function(){sockets.io.to(socket.id).emit('auth', 'a');},
-                                         function(msg){sockets.io.to(socket.id).emit('auth', 'd');})); // credentials passed from socket AP
+            socket.on('auth', auth.orize(
+                function(member){
+                    sockets.io.to(socket.id).emit('auth', 'a');
+                    slack.wh.send(member.fullname + ' just checked in');
+                },
+                function(msg){
+                    sockets.io.to(socket.id).emit('auth', 'd');
+                    slack.wh.send('someone was denied access');
+                })); // credentials passed from socket AP
             socket.on('renew', search.renew);                             // renewal is passed from admin client
             socket.on('findGroup', search.group);                         // find to to register under a group
         });
@@ -157,8 +178,15 @@ var sockets = {                                                           // dep
 
 var routes = {                                                            // depends on auth: handles routes
     auth: function(req, res){                                             // get route that acccess control machine pings
-        var authFunc = auth.orize(function(){res.status(200).send('a');}, // create authorization function
-                                  function(msg){res.status(403).send(msg);});
+        var authFunc = auth.orize(
+            function(member){
+                res.status(200).send('a');
+                slack.wh.send(member.fullname + ' just checked in');
+            }, // create authorization function
+            function(msg){
+                res.status(403).send(msg);
+                slack.wh.send('someone was denied access');
+            });
         authFunc(req.params);                                             // execute auth function against credentials
     },
     admin: function(req, res){                                            // post by potential admin request to sign into system
@@ -204,4 +232,5 @@ var serve = {                                                // depends on cooki
 };
 
 mongo.init();    // conect to our mongo server
+slack.init();    // fire up slack intergration
 serve.theSite(); // Initiate site!
