@@ -1,7 +1,7 @@
 // register.js ~ Copyright 2016 Manchester Makerspace ~ License MIT
 
 var display = {
-    removeValues: function(removingAll){              // set all input values to blank
+    removeValues: function(removingAll){  // set all input values to blank
         if(removingAll){$('#groupEntry').val('');}
         $('#password').val('');
         $('#groupSize').val('');
@@ -20,13 +20,11 @@ var display = {
     entryType: function(){
         var type = $('#accountType').val();
         $('.regEntries').hide();
-        display.removeValues(true);       // reset all input values to zero
+        display.removeValues(true);        // reset all input values to zero
         display.canRegister(true);         // give ability to register by defualt
         $('#startEntry').show();
         if(type === "Individual"){         // this one is super simple, just enter info to get expiry time
             $('#monthsEntry').show();
-        } else if(type === 'Landlord'){    // Landlord gets a non-expiring key, requested use over physical key for security purposes
-            $('#startEntry').hide();
         } else if(type === 'Group'){       // make a token that uses the group admins expiry time
             $('#enterGroup').show();
             display.canRegister(false);    // take ability to register away, we need info from database to continue
@@ -35,8 +33,6 @@ var display = {
             $('#monthsEntry').show();      // however if they are paying members we will happily remind them when their dues are up
             $('#passwordEntry').show();    // this allows board members to have indivdual admin rights as oppossed to using a master key
         } else if (type === 'Contractor'){ // makes a temp pass, TODO: add end date
-        } else if (type === 'Partner'){
-            $('#monthsEntry').show();
         }
     },
     findGroup: function(){                 // is called when pressing the found button (on click)
@@ -60,7 +56,7 @@ var display = {
         }
         display.canRegister(true);
     }
-}
+};
 
 var register = {
     botID: null,
@@ -79,13 +75,8 @@ var register = {
                 return (startDate || (months > 0 && months < 14)) && member.fullname && member.groupName && member.groupSize;
             } else { return member.fullname && member.groupName;}
         }
-        else if (member.status === 'Partner') {
-            return (startDate || (months > 0 && months < 14)) && member.fullname;
-            // TODO make sure partners have keystones just like groups
-        }
         else if (member.status === 'Admin')      { return member.fullname && member.password; }
-        else if (member.status === 'Landlord')   { return member.fullname; }
-        else if (member.status === 'Contractor') { return startDate && member.fullname }
+        else if (member.status === 'Contractor') { return startDate && member.fullname; }
     },
     member: function(){
         var months = $('#months').val();                   // get months and or start date to determine expire time
@@ -100,7 +91,7 @@ var register = {
             groupKeystone: false,                          // whether group keystone or not, if applicable
             groupSize: $('#groupSize').val(),              // group size note for potential limits
             password: $('#password').val(),                // passwords for admin access of employees or board members
-        }
+        };
         if(member.groupSize){ member.groupKeystone = true;}            // group size is only shown to keystone members of groups
         if(register.withConditions(member, startDate, months)){        // get proper validation for this user type
             sock.et.emit('newMember', member);                         // emit new member to sever
@@ -113,13 +104,13 @@ var register = {
             machineID: register.botID,
             botName: $('#botName').val(),
             type: $('#botType').val()
-        }
+        };
         if(bot.botName && bot.type){              // make sure we have proper information to proceed
             sock.et.emit('newBot', bot);          // send new bot to be made to server
             app.display('search');
         } else { $('#msg').text('Please enter correct information'); }
     }
-}
+};
 
 var expire = {                                                      // determine member expirations
     sAt: function(months, startDate){                               // determine when a member will expire
@@ -129,7 +120,7 @@ var expire = {                                                      // determine
             return startDate + months * 1000 * 60 * 60 * 24 * 30;   // second*minute*hour*day*month = millis per x months + start millis
         } else { return startDate; }                                // given no months are provide start date becomes end date
     }
-}
+};
 
 var search = {
     find: function(){
@@ -174,7 +165,7 @@ var search = {
             $('#renew').hide();                                                           // hide renew button to prevent double renews
         } else {$('#msg').text("enter a valid amount of months");}                        // test admin to do it right
     }
-}
+};
 
 var sock = {                                                   // Handle socket.io connection events
     et: io(),                                                  // start socket.io listener
@@ -188,7 +179,7 @@ var sock = {                                                   // Handle socket.
     },
     regMem: function(data){
         $('#msg').text('Unknown card scanned');
-        app.display('regMember')                               // show new member form
+        app.display('regMember');                              // show new member form
         register.cardID = data.cardID;                         // fill cardID to submit
         register.botID = data.machine;                         // fill machine value to submit TODO show which machine
         $('#memMsg').text("Register Member:" + data.cardID);   // indicated ready for submission
@@ -200,7 +191,7 @@ var sock = {                                                   // Handle socket.
         $('#botMsg').text("Register bot:" + machineID);        // indicated ready for submission
     },
     msg: function(msg){$('#msg').text(msg);},
-}
+};
 
 var app = {
     init: function(){
@@ -229,6 +220,6 @@ var app = {
             $("#findMember").show();
         }
     }
-}
+};
 
 $(document).ready(app.init);
