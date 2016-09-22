@@ -1,10 +1,13 @@
-To run the server enviornment variables are needed!
+To setup the dependencies required for accessBot, ensure you cd to ./Server/ and run the following script:
+sudo./setup.sh 
+
+To run the server, environment variables are needed!
 
 Here is a small shell script that sets up said variables
 
     #!/bin/bash
 
-    # scipt for starting our accessBot
+    # script for starting our accessBot
     clear
     PORT="3000"
     export PORT
@@ -26,6 +29,6 @@ Here is a small shell script that sets up said variables
     OUR_FRONT_DOOR="nameofthemaindoorlandlordwouldcomein"
     export OUR_FRONT_DOOR
 
-"nano start.sh" in Sever this folder, add above code with your own parameters, ctrl-x to save, and "chmod +x start.sh"
+"nano start.sh" in ./Server/ folder, add above code with your own parameters, ctrl-x to save, and "chmod +x start.sh"
 
 To start the server run ./start.sh
