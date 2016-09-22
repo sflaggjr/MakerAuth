@@ -14,5 +14,8 @@ apt-get install -y mongodb
 echo "Installing pm2"
 npm install -g pm2
 
+echo "Installing nodemon"
+npm install -g nodemon
+
 echo "Installing Dependencies"
 npm install
